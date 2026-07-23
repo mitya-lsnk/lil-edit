@@ -37,6 +37,31 @@ pub struct ModelSpec {
     pub tag: &'static str,
 }
 
+// Real-ESRGAN ships a separate ncnn-vulkan archive per OS. Pick the right one at
+// compile time (url, zip name, human size, byte size) — otherwise a Windows/Linux
+// build downloads the macOS binary and fails to launch (os error 193).
+#[cfg(target_os = "windows")]
+const REALESRGAN: (&str, &str, &str, u64) = (
+    "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.5.0/realesrgan-ncnn-vulkan-20220424-windows.zip",
+    "realesrgan-ncnn-vulkan-windows.zip",
+    "45 MB",
+    45_474_481,
+);
+#[cfg(target_os = "linux")]
+const REALESRGAN: (&str, &str, &str, u64) = (
+    "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.5.0/realesrgan-ncnn-vulkan-20220424-ubuntu.zip",
+    "realesrgan-ncnn-vulkan-ubuntu.zip",
+    "47 MB",
+    46_931_474,
+);
+#[cfg(target_os = "macos")]
+const REALESRGAN: (&str, &str, &str, u64) = (
+    "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.5.0/realesrgan-ncnn-vulkan-20220424-macos.zip",
+    "realesrgan-ncnn-vulkan-macos.zip",
+    "49 MB",
+    51_817_124,
+);
+
 /// The full registry. Links verified reachable on 2026-07-19.
 pub const REGISTRY: &[ModelSpec] = &[
     ModelSpec {
@@ -114,10 +139,10 @@ pub const REGISTRY: &[ModelSpec] = &[
         name: "Real-ESRGAN (ncnn)",
         category: "upscale",
         description: "Upscale engine + models (general, anime, anime-video). GPU-accelerated via Vulkan.",
-        url: "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.5.0/realesrgan-ncnn-vulkan-20220424-macos.zip",
-        file: "realesrgan-ncnn-vulkan-macos.zip",
-        size: "49 MB",
-        bytes: 51_817_124,
+        url: REALESRGAN.0,
+        file: REALESRGAN.1,
+        size: REALESRGAN.2,
+        bytes: REALESRGAN.3,
         archive: true,
         homepage: "https://github.com/xinntao/Real-ESRGAN",
         license: "BSD-3-Clause",
@@ -160,9 +185,40 @@ fn target_path(dir: &Path, spec: &ModelSpec) -> PathBuf {
     }
 }
 
+/// Name of the Real-ESRGAN binary on this platform (Windows carries .exe).
+#[cfg(windows)]
+const REALESRGAN_BIN: &str = "realesrgan-ncnn-vulkan.exe";
+#[cfg(not(windows))]
+const REALESRGAN_BIN: &str = "realesrgan-ncnn-vulkan";
+
+/// Recursively check whether a file named `needle` exists under `dir`.
+fn contains_file(dir: &Path, needle: &str) -> bool {
+    let Ok(entries) = std::fs::read_dir(dir) else {
+        return false;
+    };
+    for e in entries.flatten() {
+        let p = e.path();
+        if p.is_dir() {
+            if contains_file(&p, needle) {
+                return true;
+            }
+        } else if p.file_name().and_then(|n| n.to_str()) == Some(needle) {
+            return true;
+        }
+    }
+    false
+}
+
 fn is_downloaded(dir: &Path, spec: &ModelSpec) -> bool {
     let p = target_path(dir, spec);
     if spec.archive {
+        // For the upscale engine, "installed" must mean the binary for THIS platform
+        // is present — an older build may have extracted another OS's binary (which
+        // can't launch here, os error 193), and a bare non-empty folder would wrongly
+        // read as installed and skip the re-download.
+        if spec.id == "realesrgan-ncnn" {
+            return contains_file(&p, REALESRGAN_BIN);
+        }
         p.is_dir() && std::fs::read_dir(&p).map(|mut d| d.next().is_some()).unwrap_or(false)
     } else {
         p.is_file()

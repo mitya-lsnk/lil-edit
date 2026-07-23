@@ -64,7 +64,12 @@ pub async fn upscale_image(
         return Err("Движок Real-ESRGAN не установлен. Скачайте его в разделе «Движок апскейла».".into());
     }
 
-    let bin = find_file(&root, "realesrgan-ncnn-vulkan")
+    // The Windows build ships the binary with a .exe extension.
+    #[cfg(windows)]
+    let bin_name = "realesrgan-ncnn-vulkan.exe";
+    #[cfg(not(windows))]
+    let bin_name = "realesrgan-ncnn-vulkan";
+    let bin = find_file(&root, bin_name)
         .ok_or("Не найден бинарник realesrgan-ncnn-vulkan в папке модели")?;
     let models_dir = find_models_dir(&root)
         .ok_or("Не найдена папка с моделями (.param) внутри движка")?;
@@ -76,10 +81,13 @@ pub async fn upscale_image(
         use std::os::unix::fs::PermissionsExt;
         let _ = std::fs::set_permissions(&bin, std::fs::Permissions::from_mode(0o755));
     }
-    let _ = Command::new("xattr")
-        .args(["-dr", "com.apple.quarantine"])
-        .arg(&root)
-        .output();
+    #[cfg(target_os = "macos")]
+    {
+        let _ = Command::new("xattr")
+            .args(["-dr", "com.apple.quarantine"])
+            .arg(&root)
+            .output();
+    }
 
     // Temp in/out files.
     let tmp = std::env::temp_dir();
@@ -98,8 +106,8 @@ pub async fn upscale_image(
         model_name.clone()
     };
 
-    let output = Command::new(&bin)
-        .current_dir(&workdir)
+    let mut cmd = Command::new(&bin);
+    cmd.current_dir(&workdir)
         .arg("-i")
         .arg(&in_path)
         .arg("-o")
@@ -111,7 +119,15 @@ pub async fn upscale_image(
         .arg("-m")
         .arg(&models_dir)
         .arg("-f")
-        .arg("png")
+        .arg("png");
+    // Don't flash a console window on each run (the engine is a console app).
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+        cmd.creation_flags(CREATE_NO_WINDOW);
+    }
+    let output = cmd
         .output()
         .map_err(|e| format!("Не удалось запустить движок: {e}"))?;
 
