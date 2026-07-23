@@ -1,0 +1,129 @@
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  type ReactNode,
+} from "react";
+
+export type Skin = "brutal" | "riso" | "te";
+export type Mode = "light" | "dark";
+
+export interface SkinMeta {
+  id: Skin;
+  name: string;
+  tagline: string;
+  /** two swatch colors for the picker chip */
+  swatch: [string, string];
+}
+
+export const SKINS: SkinMeta[] = [
+  {
+    id: "brutal",
+    name: "Нео-брутализм",
+    tagline: "жёсткие рамки, тени, жёлтый",
+    swatch: ["#ffde00", "#111111"],
+  },
+  {
+    id: "riso",
+    name: "Рисо-поп",
+    tagline: "японский ризограф, полутон",
+    swatch: ["#ea3a0c", "#2233c4"],
+  },
+  {
+    id: "te",
+    name: "TE Hardware",
+    tagline: "приборная панель, скругления",
+    swatch: ["#fa4b00", "#15150f"],
+  },
+];
+
+const STORAGE_KEY = "lilimage.skin";
+const LEGACY_KEY = "blopimage.skin"; // pre-rename; migrated on first read
+const MODE_KEY = "lilimage.mode";
+
+function isSkin(v: unknown): v is Skin {
+  return v === "brutal" || v === "riso" || v === "te";
+}
+function isMode(v: unknown): v is Mode {
+  return v === "light" || v === "dark";
+}
+
+function readInitial(): Skin {
+  if (typeof localStorage !== "undefined") {
+    const v = localStorage.getItem(STORAGE_KEY);
+    if (isSkin(v)) return v;
+    const legacy = localStorage.getItem(LEGACY_KEY);
+    if (isSkin(legacy)) return legacy; // carry the pre-rename choice over
+  }
+  return "brutal";
+}
+
+// No stored choice → follow the OS. Once the user toggles, we persist and stop
+// tracking the system preference (an explicit choice wins).
+function readInitialMode(): Mode {
+  if (typeof localStorage !== "undefined") {
+    const v = localStorage.getItem(MODE_KEY);
+    if (isMode(v)) return v;
+  }
+  if (
+    typeof matchMedia !== "undefined" &&
+    matchMedia("(prefers-color-scheme: dark)").matches
+  ) {
+    return "dark";
+  }
+  return "light";
+}
+
+interface SkinCtx {
+  skin: Skin;
+  setSkin: (s: Skin) => void;
+  mode: Mode;
+  setMode: (m: Mode) => void;
+  toggleMode: () => void;
+}
+
+const Ctx = createContext<SkinCtx>({
+  skin: "brutal",
+  setSkin: () => {},
+  mode: "light",
+  setMode: () => {},
+  toggleMode: () => {},
+});
+
+export function SkinProvider({ children }: { children: ReactNode }) {
+  const [skin, setSkin] = useState<Skin>(readInitial);
+  const [mode, setMode] = useState<Mode>(readInitialMode);
+
+  // Reflect the choice on <html data-skin> so CSS can key off it, and persist.
+  useEffect(() => {
+    document.documentElement.dataset.skin = skin;
+    try {
+      localStorage.setItem(STORAGE_KEY, skin);
+    } catch {
+      // storage may be unavailable (private mode); the data-attr still applies.
+    }
+  }, [skin]);
+
+  // Light/dark is an orthogonal axis: CSS combines [data-mode] with [data-skin].
+  useEffect(() => {
+    document.documentElement.dataset.mode = mode;
+    try {
+      localStorage.setItem(MODE_KEY, mode);
+    } catch {
+      // ignore — the data-attr still applies for this session.
+    }
+  }, [mode]);
+
+  const toggleMode = () => setMode((m) => (m === "dark" ? "light" : "dark"));
+
+  return (
+    <Ctx.Provider value={{ skin, setSkin, mode, setMode, toggleMode }}>
+      {children}
+    </Ctx.Provider>
+  );
+}
+
+export function useSkin(): SkinCtx {
+  return useContext(Ctx);
+}

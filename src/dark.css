@@ -1,0 +1,162 @@
+/* ============================================================
+   lil image — dark mode.
+
+   Light/dark is an axis orthogonal to the skin: <html> carries both
+   data-skin (brutal|riso|te) and data-mode (light|dark). This file only
+   defines the dark half — it re-points the same semantic variables each
+   skin already uses, so components need no dark-specific markup.
+
+   Loaded AFTER skins.css, so [data-mode="dark"][data-skin=…] (0,2,0) wins
+   over the plain [data-skin=…] (0,1,0) palettes. Structural pieces that
+   hardcode a light colour (mostly in the default brutalist rules) are
+   re-mapped here, scoped tightly so they don't clobber riso/te, which
+   already re-skin those surfaces through variables.
+   ============================================================ */
+
+/* =====================================================================
+   BRUTALISM — dark: near-black page, off-white ink + borders, hard
+   light-coloured shadows (the offset shadow follows --ink, now light).
+   ===================================================================== */
+[data-mode="dark"][data-skin="brutal"] {
+  --paper: #0e0e0e;
+  --surface: #1a1a1a;
+  --surface-2: #242424;
+  --screen: #000000;
+  --screen-ink: #f4f0e6;
+
+  --ink: #f4f0e6;
+  --line: #f4f0e6;
+  --muted: #9a968c;
+
+  --accent: #ffde00;
+  --accent-ink: #111111;
+  --accent-2: #ff5bb0;
+  --accent-2-ink: #111111;
+  --accent-3: #6d86ff;
+  --accent-3-ink: #ffffff;
+  --danger: #ff5bb0;
+}
+
+/* The header rule paints with var(--ink); now that ink is light, force the
+   bar back to dark so it stays a header, not a bright plate. */
+[data-mode="dark"][data-skin="brutal"] .app-header {
+  background: #161616;
+}
+
+/* The compare/preview stages hardcode a light value in the default rules.
+   riso/te already re-skin these through variables, so only brutal needs the
+   remap here (broadening it would clobber riso's halftone / te's screen). */
+[data-mode="dark"][data-skin="brutal"] .cmp-img-wrap,
+[data-mode="dark"][data-skin="brutal"] .cmp-split,
+[data-mode="dark"][data-skin="brutal"] .cmp-hold,
+[data-mode="dark"][data-skin="brutal"] .single-view .cmp-img-wrap {
+  background: var(--surface-2);
+}
+
+/* =====================================================================
+   JAPANESE RISO POP — dark: warm near-black paper, cream ink, the inks
+   (vermilion + cobalt) brighten so they still pop. The cobalt offset
+   shadow defined in skins.css rides along via var(--accent-2).
+   ===================================================================== */
+[data-mode="dark"][data-skin="riso"] {
+  --paper: #17130d;
+  --surface: #1e1913;
+  --surface-2: #251f16;
+  --screen: #0e0b07;
+  --screen-ink: #f2e6cf;
+
+  --ink: #f2e6cf;
+  --line: #f2e6cf;
+  --muted: #a1927a;
+
+  --accent: #ff5a2c;
+  --accent-ink: #17130d;
+  --accent-2: #4d69ff;
+  --accent-2-ink: #ffffff;
+  --accent-3: #4d69ff;
+  --accent-3-ink: #ffffff;
+  --danger: #ff5a2c;
+}
+
+/* the risograph paper dusting: brighten the halftone so it survives on dark */
+[data-mode="dark"][data-skin="riso"] .app-shell {
+  background-image: radial-gradient(rgba(255, 90, 44, 0.11) 1px, transparent 1.5px);
+}
+/* kanji watermark reads too faint on dark cards — lift it a touch */
+[data-mode="dark"][data-skin="riso"] .tool-card::after {
+  opacity: 0.18;
+}
+
+/* =====================================================================
+   TEENAGE ENGINEERING — dark hardware unit: charcoal device greys, warm
+   off-white ink, hairline borders one step lighter than the surface.
+   ===================================================================== */
+[data-mode="dark"][data-skin="te"] {
+  --paper: #232420;
+  --surface: #2c2d27;
+  --surface-2: #313229;
+  --screen: #0d0d0a;
+  --screen-ink: #e8e6da;
+
+  --ink: #e8e6da;
+  --line: #3c3d35;
+  --muted: #909084;
+
+  --accent: #fa4b00;
+  --accent-ink: #1a0a00;
+  --accent-2: #4a86ff;
+  --accent-2-ink: #ffffff;
+  --accent-3: #35b565;
+  --accent-3-ink: #06210f;
+  --ok: #35b565;
+
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 8px 22px rgba(0, 0, 0, 0.5);
+}
+
+/* the TE header hardcodes a light plate — swap it for a dark one */
+[data-mode="dark"][data-skin="te"] .app-header {
+  background: #26271f;
+  border-bottom-color: var(--line);
+}
+
+/* =====================================================================
+   Shared dark fixes — surfaces the default (brutalist) rules paint with a
+   literal light value or with var(--ink) assuming ink is dark. These aren't
+   re-skinned per skin, so remap them for every dark skin. background-color
+   (not the shorthand) keeps any skin's background-image layer intact.
+   ===================================================================== */
+[data-mode="dark"] .home-drop:hover,
+[data-mode="dark"] .home-drop.over,
+[data-mode="dark"] .home-drop.loaded,
+[data-mode="dark"] .faq-sec {
+  background-color: var(--surface);
+}
+[data-mode="dark"] .home-drop .thumb,
+[data-mode="dark"] .m-progress {
+  background-color: var(--surface-2);
+}
+/* fullscreen lightbox backdrop paints with var(--ink) → force it dark */
+[data-mode="dark"] .lightbox {
+  background: var(--screen);
+}
+/* the little BEFORE/AFTER chips sit on the image with white text — keep the
+   chip dark so it stays legible (var(--ink) would flip light) */
+[data-mode="dark"] .cmp-tag {
+  background: var(--screen);
+}
+
+/* the control strip should stay a dark screen regardless of skin */
+[data-mode="dark"] .cmp-bar {
+  background: var(--screen);
+}
+/* active tab/mode chips: dark text on the (light) accent fill */
+[data-mode="dark"] .cmp-tool.active,
+[data-mode="dark"] .cmp-modes button.active {
+  color: var(--accent-ink);
+}
+/* error banner: danger is a light colour in dark mode → dark text on it */
+[data-mode="dark"] .b-error {
+  color: #111111;
+}

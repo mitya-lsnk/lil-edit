@@ -1,0 +1,486 @@
+:root {
+  --bg: #0f1115;
+  --bg-2: #161922;
+  --bg-3: #1e2230;
+  --line: #2a2f3d;
+  --text: #e6e8ee;
+  --muted: #8b93a7;
+  --accent: #6ea8fe;
+  --accent-2: #4f8cff;
+  --good: #59d99a;
+  --bad: #ff6b6b;
+  --radius: 12px;
+}
+
+/* Body/reset now come from theme.css (neo-brutalism).
+   These panel styles are used inside detail screens pending their restyle. */
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ---------- Top bar ---------- */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-2);
+}
+.brand {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+.logo {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+.tagline {
+  color: var(--muted);
+  font-size: 13px;
+}
+.filechip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 340px;
+  padding: 6px 10px;
+  background: var(--bg-3);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: 13px;
+  color: var(--muted);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.filechip .x {
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+}
+.filechip .x:hover {
+  color: var(--text);
+}
+
+/* ---------- Empty state ---------- */
+.empty {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  padding: 40px;
+}
+
+/* ---------- Dropzone ---------- */
+.dropzone {
+  border: 2px dashed var(--line);
+  border-radius: 16px;
+  background: var(--bg-2);
+  padding: 60px 80px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: center;
+}
+.dropzone:hover,
+.dropzone.over {
+  border-color: var(--accent);
+  background: var(--bg-3);
+}
+.dropzone.compact {
+  padding: 10px 16px;
+  border-radius: 10px;
+}
+.dropzone-icon {
+  font-size: 40px;
+}
+.dropzone.compact .dropzone-icon {
+  display: none;
+}
+.dropzone-title {
+  margin-top: 12px;
+  font-size: 16px;
+  font-weight: 600;
+}
+.dropzone.compact .dropzone-title {
+  margin-top: 0;
+  font-size: 13px;
+  color: var(--muted);
+  font-weight: 500;
+}
+.dropzone-sub {
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/* ---------- Work area ---------- */
+.work {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.tabs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-2);
+}
+.tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 14px;
+  cursor: pointer;
+}
+.tab:hover {
+  color: var(--text);
+  background: var(--bg-3);
+}
+.tab.active {
+  color: var(--text);
+  background: var(--bg-3);
+  border-color: var(--line);
+}
+.tab-icon {
+  font-size: 15px;
+}
+.tabs-spacer {
+  flex: 1;
+}
+.replace {
+  min-width: 180px;
+}
+
+.content {
+  flex: 1;
+  overflow: auto;
+  padding: 20px;
+}
+
+/* ---------- Panels ---------- */
+.panel {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 20px;
+  padding: 16px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  margin-bottom: 18px;
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.field > label {
+  font-size: 12px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+.field input[type="range"] {
+  width: 220px;
+  accent-color: var(--accent);
+}
+select,
+.numinput {
+  background: var(--bg-3);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 14px;
+}
+.numinput {
+  width: 90px;
+  margin: 0 6px;
+}
+.checkbox {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center;
+  gap: 6px;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  font-size: 13px !important;
+  color: var(--text) !important;
+}
+
+/* Segmented control */
+.segmented {
+  display: inline-flex;
+  background: var(--bg-3);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.segmented button {
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  padding: 8px 14px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.segmented button:hover {
+  color: var(--text);
+}
+.segmented button.active {
+  background: var(--accent-2);
+  color: white;
+}
+
+/* Buttons */
+button.primary {
+  background: var(--accent-2);
+  color: white;
+  border: none;
+  border-radius: 9px;
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+button.primary:hover {
+  background: var(--accent);
+}
+button.primary:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+button.primary.small {
+  padding: 6px 12px;
+  font-size: 13px;
+}
+button.ghost {
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 13px;
+  cursor: pointer;
+}
+button.ghost:hover {
+  color: var(--text);
+}
+button.link {
+  background: none;
+  border: none;
+  color: var(--accent);
+  cursor: pointer;
+  font-size: 13px;
+  padding: 6px 4px;
+}
+button.link:hover {
+  text-decoration: underline;
+}
+
+/* ---------- Compare grid ---------- */
+.compare {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.compare figure {
+  margin: 0;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.compare img {
+  width: 100%;
+  height: 380px;
+  object-fit: contain;
+  background: #0a0c10;
+  display: block;
+}
+.compare figcaption {
+  padding: 10px 12px;
+  font-size: 13px;
+  color: var(--muted);
+  border-top: 1px solid var(--line);
+}
+.compare figcaption b {
+  color: var(--text);
+}
+.placeholder {
+  height: 380px;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  font-size: 14px;
+  padding: 20px;
+  text-align: center;
+}
+.checker {
+  background-image:
+    linear-gradient(45deg, #2a2f3d 25%, transparent 25%),
+    linear-gradient(-45deg, #2a2f3d 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #2a2f3d 75%),
+    linear-gradient(-45deg, transparent 75%, #2a2f3d 75%);
+  background-size: 20px 20px;
+  background-position: 0 0, 0 10px, 10px -10px, -10px 0;
+}
+.checker img {
+  background: transparent;
+}
+
+.good {
+  color: var(--good);
+}
+.bad {
+  color: var(--bad);
+}
+.mono {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 12px;
+}
+
+/* ---------- Actions / status ---------- */
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 16px;
+}
+.saved {
+  color: var(--good);
+  font-size: 13px;
+  word-break: break-all;
+}
+.muted {
+  color: var(--muted);
+  font-size: 13px;
+}
+.error {
+  background: rgba(255, 107, 107, 0.12);
+  border: 1px solid rgba(255, 107, 107, 0.4);
+  color: #ffb0b0;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 13px;
+  margin-bottom: 14px;
+  white-space: pre-wrap;
+}
+
+/* ---------- Notices / model manager ---------- */
+.notice p {
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 0 0 16px;
+}
+.more {
+  margin-top: 24px;
+}
+.more summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 13px;
+  padding: 8px 0;
+}
+
+.models {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.model-card {
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+}
+.model-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.model-name {
+  font-weight: 600;
+  font-size: 15px;
+  margin-right: 10px;
+}
+.badge {
+  display: inline-block;
+  background: var(--bg-3);
+  border: 1px solid var(--line);
+  color: var(--muted);
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 11px;
+  margin-right: 6px;
+}
+.badge.ok {
+  color: var(--good);
+  border-color: rgba(89, 217, 154, 0.4);
+}
+.model-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.model-desc {
+  color: var(--muted);
+  font-size: 13px;
+  margin-top: 8px;
+  line-height: 1.4;
+}
+.model-meta {
+  margin-top: 6px;
+  color: var(--muted);
+}
+.progress {
+  position: relative;
+  height: 22px;
+  background: var(--bg-3);
+  border-radius: 6px;
+  margin-top: 12px;
+  overflow: hidden;
+}
+.progress-bar {
+  height: 100%;
+  background: var(--accent-2);
+  transition: width 0.2s ease;
+}
+.progress-label {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  color: var(--text);
+}
+.models-dir {
+  color: var(--muted);
+  font-size: 12px;
+  margin-top: 8px;
+}

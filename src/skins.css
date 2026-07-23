@@ -1,0 +1,536 @@
+/* ============================================================
+   lil image skins — overrides for the two alternate looks.
+   Neo-brutalism is the default (defined in theme.css / screens.css).
+   Each skin re-points the semantic variables, then restyles the few
+   structural pieces that can't be expressed through variables alone,
+   and finally defines its own motion language.
+   ============================================================ */
+
+/* =====================================================================
+   SKIN: JAPANESE RISO POP  (vermilion / cobalt, halftone, misregister)
+   ===================================================================== */
+[data-skin="riso"] {
+  --paper: #f5ebd8;
+  --surface: #f5ebd8;
+  --surface-2: #f2e6d0;
+  --screen: #1a1712;
+  --screen-ink: #f5ebd8;
+
+  --ink: #1a1712;
+  --line: var(--ink);
+  --muted: #8a7e68;
+
+  --accent: #ea3a0c;
+  --accent-ink: #f5ebd8;
+  --accent-2: #2233c4;
+  --accent-2-ink: #f5ebd8;
+  --accent-3: #2233c4;
+  --accent-3-ink: #f5ebd8;
+
+  --bd-w: 2.5px;
+  --radius: 3px;
+  --radius-sm: 2px;
+  --shadow: 4px 4px 0 var(--ink);
+  --shadow-sm: 3px 3px 0 var(--ink);
+  --shadow-lg: 6px 6px 0 var(--ink);
+
+  --dur: 0.13s;
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+  --hover-lift: translate(-2px, -2px);
+}
+
+/* light header with ink rule (not the brutalist black bar) */
+[data-skin="riso"] .app-header {
+  background: var(--paper);
+  border-bottom: var(--bd);
+}
+[data-skin="riso"] .app-header .logo {
+  color: var(--accent);
+}
+[data-skin="riso"] .app-header .logo-sub,
+[data-skin="riso"] .app-header .step {
+  color: var(--muted);
+}
+[data-skin="riso"] .app-header .back,
+[data-skin="riso"] .app-header .title-mid {
+  color: var(--ink);
+}
+[data-skin="riso"] .app-header .title-mid {
+  color: var(--accent);
+}
+
+/* halftone dot field on inset surfaces */
+[data-skin="riso"] .home-drop,
+[data-skin="riso"] .cmp-split,
+[data-skin="riso"] .cmp-hold,
+[data-skin="riso"] .cmp-img-wrap,
+[data-skin="riso"] .single-view .cmp-img-wrap {
+  background-color: var(--surface-2);
+  background-image: radial-gradient(var(--paper) 40%, transparent 42%);
+  background-size: 6px 6px;
+}
+
+/* headings are solid vermilion — no chromatic offset (it shimmered and hurt
+   readability); the print-misregistration character lives on the panels now */
+[data-skin="riso"] .tool-card .tname,
+[data-skin="riso"] .home-drop .dz-title,
+[data-skin="riso"] .faq-h {
+  color: var(--accent);
+  text-shadow: none;
+}
+
+/* tool cards: circular index badge + alternating accents, flat paper bg */
+[data-skin="riso"] .tool-card {
+  background: var(--surface) !important;
+  transform: none !important;
+  box-shadow: var(--shadow-sm);
+}
+[data-skin="riso"] .tool-card.c3 .tname,
+[data-skin="riso"] .tool-card.c3 .desc {
+  color: inherit;
+}
+[data-skin="riso"] .tool-card.c3 .tname {
+  color: var(--accent);
+}
+[data-skin="riso"] .tool-card .num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--accent-ink);
+  border: 2px solid var(--ink);
+}
+[data-skin="riso"] .tool-card.c2 .num {
+  background: var(--accent-2);
+  color: var(--accent-2-ink);
+}
+[data-skin="riso"] .tool-card .run,
+[data-skin="riso"] .tool-card .stat {
+  border: 2px solid var(--ink);
+}
+[data-skin="riso"] .tool-card.c1 .run,
+[data-skin="riso"] .tool-card.c3 .run {
+  background: var(--accent-2);
+  color: var(--accent-2-ink);
+}
+[data-skin="riso"] .tool-card.c2 .run {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+/* primary CTA: solid cobalt, paper text — clean and readable */
+[data-skin="riso"] .b-btn--solid {
+  background: var(--accent-2);
+  color: var(--accent-2-ink);
+}
+
+/* ---- Riso motion: ink misregistration on hover, halftone print-in ---- */
+[data-skin="riso"] .b-btn:hover,
+[data-skin="riso"] .tool-card:hover {
+  transform: translate(-2px, -2px) !important;
+  box-shadow: var(--shadow);
+}
+[data-skin="riso"] .tool-card {
+  transition:
+    transform var(--dur) var(--ease),
+    box-shadow var(--dur) var(--ease);
+}
+[data-skin="riso"] .cmp,
+[data-skin="riso"] .single-view {
+  animation: riso-print 0.42s var(--ease) both;
+}
+@keyframes riso-print {
+  0% {
+    opacity: 0;
+    filter: contrast(0) brightness(1.4);
+    transform: translateY(6px);
+  }
+  60% {
+    filter: contrast(1.1);
+  }
+  100% {
+    opacity: 1;
+    filter: none;
+    transform: none;
+  }
+}
+[data-skin="riso"] .b-btn--solid:active {
+  transform: translate(1px, 1px);
+}
+
+/* =====================================================================
+   SKIN: TEENAGE ENGINEERING  (device grey, rounded, hairlines, LEDs)
+   ===================================================================== */
+[data-skin="te"] {
+  --paper: #e4e3de;
+  --surface: #edece6;
+  --surface-2: #eae9e3;
+  --screen: #15150f;
+  --screen-ink: #e6e4d8;
+
+  --ink: #1e1e1b;
+  --line: #d3d2cc;
+  --muted: #8a897f;
+
+  --accent: #fa4b00;
+  --accent-ink: #241000;
+  --accent-2: #2e6ff2;
+  --accent-2-ink: #ffffff;
+  --accent-3: #2fa85a;
+  --accent-3-ink: #ffffff;
+  --ok: #2fa85a;
+  --warn: #f5a623;
+
+  --font-display: "Archivo", system-ui, sans-serif;
+  --font-head: "Archivo", system-ui, sans-serif;
+
+  --bd-w: 1px;
+  --radius: 14px;
+  --radius-sm: 8px;
+  --radius-pill: 999px;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 6px 18px rgba(0, 0, 0, 0.1);
+
+  --dur: 0.16s;
+  --ease: cubic-bezier(0.33, 0, 0.15, 1);
+  --hover-lift: none;
+}
+
+/* TE uses weight, not all-caps display faces */
+[data-skin="te"] .tool-card .tname,
+[data-skin="te"] .home-drop .dz-title,
+[data-skin="te"] .app-header .logo,
+[data-skin="te"] .app-header .title-mid,
+[data-skin="te"] .faq-h,
+[data-skin="te"] .tool-head {
+  font-family: var(--font-head);
+  font-weight: 700;
+  letter-spacing: -0.2px;
+  text-transform: none;
+  text-shadow: none;
+}
+
+/* light hardware header */
+[data-skin="te"] .app-header {
+  background: #efeee9;
+  border-bottom: 1px solid var(--line);
+}
+[data-skin="te"] .app-header .logo {
+  color: var(--ink);
+  font-size: 16px;
+  text-transform: lowercase;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+}
+[data-skin="te"] .app-header .logo::before {
+  content: "";
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  background: var(--accent);
+}
+[data-skin="te"] .app-header .logo-sub,
+[data-skin="te"] .app-header .step {
+  color: var(--muted);
+}
+[data-skin="te"] .app-header .back,
+[data-skin="te"] .app-header .title-mid {
+  color: var(--ink);
+}
+
+/* soft device panels everywhere */
+[data-skin="te"] .b-panel,
+[data-skin="te"] .t-controls,
+[data-skin="te"] .loaded-strip,
+[data-skin="te"] .m-card,
+[data-skin="te"] .onboard,
+[data-skin="te"] .faq-sec {
+  border-radius: var(--radius);
+}
+[data-skin="te"] .b-btn {
+  border-radius: var(--radius-sm);
+  text-transform: none;
+  font-weight: 700;
+}
+
+/* dropzone: dashed hairline plate with corner ticks */
+[data-skin="te"] .home-drop {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  box-shadow: var(--shadow);
+}
+[data-skin="te"] .home-drop .plus {
+  border-style: dashed;
+  border-radius: var(--radius-sm);
+}
+
+/* tool cards: rounded plates with a colored accent strip on the left */
+[data-skin="te"] .tool-card {
+  background: var(--surface) !important;
+  border-radius: 12px;
+  transform: none !important;
+  box-shadow: var(--shadow);
+  padding-left: 20px;
+  position: relative;
+  overflow: hidden;
+}
+[data-skin="te"] .tool-card::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 5px;
+  background: var(--accent);
+}
+[data-skin="te"] .tool-card.c2::before {
+  background: var(--accent-2);
+}
+[data-skin="te"] .tool-card.c3::before {
+  background: var(--accent-3);
+}
+[data-skin="te"] .tool-card .tname,
+[data-skin="te"] .tool-card.c3 .tname,
+[data-skin="te"] .tool-card.c3 .desc {
+  color: var(--ink);
+}
+[data-skin="te"] .tool-card .num {
+  font-family: var(--font-mono);
+  color: var(--muted);
+}
+[data-skin="te"] .tool-card .stat {
+  background: transparent;
+  color: var(--muted) !important;
+  padding: 0;
+  font-family: var(--font-mono);
+}
+[data-skin="te"] .tool-card .run {
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-radius: var(--radius-sm);
+}
+[data-skin="te"] .tool-card.c2 .run {
+  background: var(--accent-2);
+  color: #fff;
+}
+[data-skin="te"] .tool-card.c3 .run {
+  background: var(--accent-3);
+  color: #fff;
+}
+
+/* solid CTA becomes the orange pill */
+[data-skin="te"] .b-btn--solid {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+[data-skin="te"] .b-btn--yellow {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+/* the compare/preview stage reads as a dark device screen */
+[data-skin="te"] .cmp-bar {
+  border-radius: var(--radius) var(--radius) 0 0;
+}
+[data-skin="te"] .cmp-split,
+[data-skin="te"] .cmp-hold,
+[data-skin="te"] .cmp-img-wrap,
+[data-skin="te"] .single-view .cmp-img-wrap,
+[data-skin="te"] .lightbox {
+  background: var(--screen);
+}
+
+/* ---- TE motion: precise, mechanical, LED ---- */
+[data-skin="te"] .b-btn:hover {
+  filter: brightness(1.04);
+  box-shadow: var(--shadow);
+}
+[data-skin="te"] .b-btn:active {
+  transform: translateY(1px);
+  box-shadow: none;
+}
+[data-skin="te"] .tool-card {
+  transition:
+    box-shadow var(--dur) var(--ease),
+    transform var(--dur) var(--ease);
+}
+[data-skin="te"] .tool-card:hover {
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-2px) !important;
+}
+[data-skin="te"] .tool-card:hover::before {
+  animation: te-led 1s steps(1, end) infinite;
+}
+@keyframes te-led {
+  0%,
+  60% {
+    opacity: 1;
+  }
+  61%,
+  100% {
+    opacity: 0.5;
+  }
+}
+[data-skin="te"] .cmp,
+[data-skin="te"] .single-view {
+  animation: te-boot 0.34s var(--ease) both;
+}
+@keyframes te-boot {
+  0% {
+    opacity: 0;
+    transform: translateY(8px) scale(0.996);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* =====================================================================
+   Brutalism (default) motion — punchy reveal so all three feel authored
+   ===================================================================== */
+[data-skin="brutal"] .cmp,
+[data-skin="brutal"] .single-view,
+:root .cmp,
+:root .single-view {
+  animation: brutal-slam 0.22s cubic-bezier(0.2, 1.2, 0.4, 1) both;
+}
+@keyframes brutal-slam {
+  0% {
+    opacity: 0;
+    transform: translate(-6px, -6px);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* =====================================================================
+   Respect reduced-motion: keep the skins, drop the movement.
+   ===================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  [data-skin] .cmp,
+  [data-skin] .single-view,
+  :root .cmp,
+  :root .single-view {
+    animation: none !important;
+  }
+  [data-skin="te"] .tool-card:hover::before {
+    animation: none !important;
+  }
+  * {
+    transition-duration: 0.001s !important;
+  }
+}
+
+/* =====================================================================
+   Tool switcher — light-header skins need ink-on-paper, not white-on-black
+   ===================================================================== */
+[data-skin="riso"] .app-header .tool-switch,
+[data-skin="te"] .app-header .tool-switch {
+  border-color: var(--line);
+}
+[data-skin="riso"] .app-header .tool-switch button,
+[data-skin="te"] .app-header .tool-switch button {
+  color: var(--ink);
+  border-right-color: var(--line);
+}
+[data-skin="riso"] .app-header .tool-switch button.active,
+[data-skin="te"] .app-header .tool-switch button.active {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+[data-skin="riso"] .app-header .tool-switch button:hover:not(.active):not(:disabled),
+[data-skin="te"] .app-header .tool-switch button:hover:not(.active):not(:disabled) {
+  background: rgba(0, 0, 0, 0.06);
+}
+[data-skin="te"] .app-header .tool-switch button {
+  text-transform: none;
+}
+
+/* =====================================================================
+   RISO — push it further from brutalism: print misregistration (cobalt
+   offset shadows, not black), a risograph paper halftone across the whole
+   page, kanji watermarks on the tool cards, and hand-stamp hovers.
+   ===================================================================== */
+[data-skin="riso"] {
+  /* the signature move: the "second ink pass" sits in cobalt, not black */
+  --shadow: 5px 5px 0 var(--accent-2);
+  --shadow-sm: 3px 3px 0 var(--accent-2);
+  --shadow-lg: 7px 7px 0 var(--accent-2);
+}
+
+/* risograph paper: a faint vermilion halftone dusted over the entire app */
+[data-skin="riso"] .app-shell {
+  background-color: var(--paper);
+  background-image: radial-gradient(rgba(234, 58, 12, 0.09) 1px, transparent 1.5px);
+  background-size: 7px 7px;
+}
+
+/* the drop plus gets a cobalt ghost (off-register print) */
+[data-skin="riso"] .home-drop .plus {
+  border-color: var(--accent);
+  box-shadow: 3px 3px 0 var(--accent-2);
+}
+[data-skin="riso"] .home-drop .plus::before,
+[data-skin="riso"] .home-drop .plus::after {
+  background: var(--accent);
+}
+
+/* tool cards: big faint kanji behind the content + hand-stamped hover */
+[data-skin="riso"] .tool-card {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+/* kanji watermark parked in the top-right corner, clear of the title (top-left)
+   and the RUN button (bottom-right) */
+[data-skin="riso"] .tool-card::after {
+  position: absolute;
+  right: -10px;
+  top: -22px;
+  bottom: auto;
+  font-family: var(--font-jp);
+  font-weight: 900;
+  font-size: 82px;
+  line-height: 1;
+  color: var(--accent);
+  opacity: 0.13;
+  z-index: -1;
+  pointer-events: none;
+}
+[data-skin="riso"] .tool-card.c1::after {
+  content: "圧";
+}
+[data-skin="riso"] .tool-card.c2::after {
+  content: "拡";
+  color: var(--accent-2);
+}
+[data-skin="riso"] .tool-card.c3::after {
+  content: "抜";
+}
+[data-skin="riso"] .tool-card:hover {
+  transform: translate(-2px, -2px) rotate(-0.6deg) !important;
+  box-shadow: var(--shadow);
+}
+
+/* buttons: chunkier stamp, cobalt offset on hover */
+[data-skin="riso"] .b-btn {
+  font-family: var(--font-display);
+  letter-spacing: 0.5px;
+}
+[data-skin="riso"] .b-btn:hover {
+  box-shadow: var(--shadow-sm);
+}
+
+/* the mode/segment controls read as inked chips */
+[data-skin="riso"] .cmp-bar {
+  background: var(--ink);
+}

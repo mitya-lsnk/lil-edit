@@ -1,0 +1,56 @@
+name: Windows build
+
+# Builds the Windows installers on a real Windows runner (the reliable path —
+# the app links native onnxruntime and can't be cross-built from macOS).
+# Runs on every push to main and can be triggered by hand from the Actions tab.
+# The .msi and .exe (NSIS) land as downloadable artifacts on each run.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# A newer push supersedes an in-flight build for the same ref.
+concurrency:
+  group: windows-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust build
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      # Compiles the frontend (tsc && vite build) and bundles the Tauri app.
+      # ort downloads the Windows onnxruntime here; WebView2 is provided by the
+      # runner. Produces the MSI (WiX) and EXE (NSIS) installers.
+      - name: Build Tauri app
+        run: npm run tauri build
+
+      - name: Upload installers
+        uses: actions/upload-artifact@v4
+        with:
+          name: lil-image-windows-${{ github.run_number }}
+          if-no-files-found: error
+          path: |
+            src-tauri/target/release/bundle/msi/*.msi
+            src-tauri/target/release/bundle/nsis/*.exe
