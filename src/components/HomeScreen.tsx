@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from "react";
+import { onDragHover, pickImage, type Picked } from "../lib/intake";
+import { hasTauri } from "../lib/tauri";
 
 export type Tool = "compress" | "upscale" | "background";
 
 interface Props {
   file: File | null;
-  onFile: (f: File) => void;
+  onFile: (p: Picked) => void;
   onPick: (tool: Tool) => void;
 }
 
@@ -56,13 +58,25 @@ export function HomeBody({ file, onFile, onPick }: Props) {
     return () => URL.revokeObjectURL(url);
   }, [file]);
 
+  // Native drag-drop swallows dragover, so the highlight comes from Tauri.
+  useEffect(() => onDragHover(setOver), []);
+
   function handleFiles(files: FileList | null) {
     if (!files) return;
     const img = Array.from(files).find((f) => f.type.startsWith("image/"));
-    if (img) onFile(img);
+    if (img) onFile({ file: img, path: null });
   }
 
-  const pick = () => inputRef.current?.click();
+  // In the app go through the native dialog — it's the only picker that tells us
+  // where the file lives, which is what Save needs to default next to it.
+  const pick = async () => {
+    if (!hasTauri()) {
+      inputRef.current?.click();
+      return;
+    }
+    const picked = await pickImage();
+    if (picked) onFile(picked);
+  };
 
   const fileInput = (
     <input

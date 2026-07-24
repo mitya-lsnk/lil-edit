@@ -11,11 +11,13 @@ import { Compare } from "./Compare";
 
 interface Props {
   file: File;
+  /** Folder of the original — where the Save dialog should open. */
+  srcDir: string | null;
 }
 
 const FORMATS: OutputFormat[] = ["mozjpeg", "webp", "avif", "oxipng"];
 
-export function CompressPanel({ file }: Props) {
+export function CompressPanel({ file, srcDir }: Props) {
   const [format, setFormat] = useState<OutputFormat>("mozjpeg");
   const [quality, setQuality] = useState(75);
   const [resize, setResize] = useState(false);
@@ -69,7 +71,7 @@ export function CompressPanel({ file }: Props) {
     const base = file.name.replace(/\.[^.]+$/, "");
     const name = `${base}-min.${meta.ext}`;
     try {
-      const path = await saveBytes(result.bytes, name, meta.ext);
+      const path = await saveBytes(result.bytes, name, meta.ext, srcDir);
       if (path) setSaved(path);
     } catch (e) {
       setError(String(e));

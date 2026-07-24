@@ -1,8 +1,16 @@
 import { useEffect, useState } from "react";
 import { openUrl } from "@tauri-apps/plugin-opener";
+import { open } from "@tauri-apps/plugin-dialog";
 import { SKINS, useSkin } from "../lib/skin";
 import { ModelManager } from "./ModelManager";
-import { cacheInfo, clearCache, type CacheInfo } from "../lib/models";
+import {
+  cacheInfo,
+  clearCache,
+  modelsLocation,
+  setModelsDir,
+  type CacheInfo,
+  type ModelsLocation,
+} from "../lib/models";
 import { formatBytes } from "../lib/format";
 import { hasTauri } from "../lib/tauri";
 
@@ -12,6 +20,9 @@ export function SettingsScreen() {
   const [clearing, setClearing] = useState(false);
   const [confirm, setConfirm] = useState(false);
   const [note, setNote] = useState<string | null>(null);
+  const [loc, setLoc] = useState<ModelsLocation | null>(null);
+  const [moveExisting, setMoveExisting] = useState(true);
+  const [moving, setMoving] = useState(false);
 
   const tauri = hasTauri();
 
@@ -20,8 +31,35 @@ export function SettingsScreen() {
     cacheInfo()
       .then(setCache)
       .catch(() => setCache(null));
+    modelsLocation()
+      .then(setLoc)
+      .catch(() => setLoc(null));
   }
   useEffect(refreshCache, [tauri]);
+
+  /** `dir: null` restores the default location. */
+  async function relocate(dir: string | null) {
+    setMoving(true);
+    setNote(null);
+    try {
+      setLoc(await setModelsDir(dir, moveExisting));
+      setNote(
+        moveExisting
+          ? "Папка изменена, скачанное перенесено."
+          : "Папка изменена.",
+      );
+      refreshCache();
+    } catch (e) {
+      setNote(String(e));
+    } finally {
+      setMoving(false);
+    }
+  }
+
+  async function onPickDir() {
+    const dir = await open({ directory: true, multiple: false });
+    if (typeof dir === "string") await relocate(dir);
+  }
 
   async function onClear() {
     setClearing(true);
@@ -119,15 +157,55 @@ export function SettingsScreen() {
               </div>
             </div>
             {note && <div className="set-note">{note}</div>}
-            {cache && (
-              <button
-                className="set-path"
-                onClick={() => openUrl(`file://${cache.dir}`)}
-                title="Открыть в Finder"
-              >
-                {cache.dir}
-              </button>
-            )}
+
+            {/* Where the models live. People install the app on one drive and
+                are (rightly) annoyed when gigabytes land on another. */}
+            <div className="set-loc">
+              <span className="set-loc-lbl">Папка моделей</span>
+              {loc && (
+                <button
+                  className="set-path"
+                  onClick={() => openUrl(`file://${loc.dir}`)}
+                  title="Открыть папку"
+                >
+                  {loc.dir}
+                </button>
+              )}
+              <label className="t-check">
+                <input
+                  type="checkbox"
+                  checked={moveExisting}
+                  disabled={moving}
+                  onChange={(e) => setMoveExisting(e.target.checked)}
+                />
+                переносить уже скачанное
+              </label>
+              <div className="set-loc-act">
+                <button className="b-btn" disabled={moving} onClick={onPickDir}>
+                  {moving ? "Переношу…" : "Выбрать папку…"}
+                </button>
+                {loc?.appDir && loc.dir !== loc.appDir && (
+                  <button
+                    className="b-btn"
+                    disabled={moving}
+                    onClick={() => relocate(loc.appDir)}
+                    title={loc.appDir}
+                  >
+                    Рядом с программой
+                  </button>
+                )}
+                {loc?.custom && (
+                  <button
+                    className="b-btn"
+                    disabled={moving}
+                    onClick={() => relocate(null)}
+                    title={loc.defaultDir}
+                  >
+                    По умолчанию
+                  </button>
+                )}
+              </div>
+            </div>
           </>
         )}
       </section>
@@ -143,7 +221,7 @@ export function SettingsScreen() {
       </section>
 
       <section className="set-sec">
-        <h3 className="set-h">Движок апскейла</h3>
+        <h3 className="set-h">Движки апскейла</h3>
         {tauri ? (
           <ModelManager filter="upscale" onChanged={refreshCache} />
         ) : (

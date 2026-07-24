@@ -7,7 +7,7 @@ use std::path::PathBuf;
 use image::{imageops::FilterType, GenericImageView};
 use ort::session::{builder::GraphOptimizationLevel, Session};
 use ort::value::Tensor;
-use tauri::{AppHandle, Manager};
+use tauri::AppHandle;
 
 /// Per-model input size and normalization (mean, std), matching rembg.
 fn model_params(id: &str) -> (usize, [f32; 3], [f32; 3]) {
@@ -29,12 +29,7 @@ fn model_path(app: &AppHandle, id: &str) -> Result<PathBuf, String> {
         "silueta" => "silueta.onnx",
         other => return Err(format!("Неизвестная модель: {other}")),
     };
-    let p = app
-        .path()
-        .app_data_dir()
-        .map_err(|e| e.to_string())?
-        .join("models")
-        .join(file);
+    let p = crate::models::models_dir(app)?.join(file);
     if !p.is_file() {
         return Err(format!("Модель {id} не скачана"));
     }

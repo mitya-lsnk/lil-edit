@@ -10,6 +10,7 @@ import { FaqScreen } from "./components/FaqScreen";
 import { SettingsScreen } from "./components/SettingsScreen";
 import { SkinPicker } from "./components/SkinPicker";
 import { ModeToggle } from "./components/ModeToggle";
+import { onImageDrop, splitPath, type Picked } from "./lib/intake";
 
 type Screen = "home" | "faq" | "settings" | Tool;
 
@@ -21,36 +22,27 @@ const TOOL_META: Record<Tool, { title: string; step: string; short: string }> = 
 
 const TOOL_ORDER: Tool[] = ["compress", "upscale", "background"];
 
-function pickImage(files: FileList | null | undefined): File | null {
-  if (!files) return null;
-  return Array.from(files).find((f) => f.type.startsWith("image/")) ?? null;
-}
-
 function App() {
-  const [file, setFile] = useState<File | null>(null);
+  const [picked, setPicked] = useState<Picked | null>(null);
+  const [dropError, setDropError] = useState<string | null>(null);
   const [screen, setScreen] = useState<Screen>("home");
   // Where "back" from Models/Settings should land (the screen you opened them from).
   const [returnTo, setReturnTo] = useState<Screen>("home");
 
+  const file = picked?.file ?? null;
+  // Folder of the original — the Save dialogs open there.
+  const srcDir = picked?.path ? splitPath(picked.path).dir : null;
+
   // The whole window is the drop target and it accepts the file silently — no
-  // overlay. The preventDefault calls are load-bearing regardless: without them
-  // the WebView navigates to the dropped file and the app is gone until restart.
-  useEffect(() => {
-    const swallow = (e: DragEvent) => e.preventDefault();
-    const onDrop = (e: DragEvent) => {
-      e.preventDefault();
-      const img = pickImage(e.dataTransfer?.files);
-      if (img) setFile(img);
-    };
-    window.addEventListener("dragenter", swallow);
-    window.addEventListener("dragover", swallow);
-    window.addEventListener("drop", onDrop);
-    return () => {
-      window.removeEventListener("dragenter", swallow);
-      window.removeEventListener("dragover", swallow);
-      window.removeEventListener("drop", onDrop);
-    };
-  }, []);
+  // overlay.
+  useEffect(
+    () =>
+      onImageDrop((p) => {
+        setDropError(null);
+        setPicked(p);
+      }, setDropError),
+    [],
+  );
 
   const isHome = screen === "home";
   const isFaq = screen === "faq";
@@ -132,16 +124,23 @@ function App() {
         ) : isSettings ? (
           <SettingsScreen />
         ) : isHome ? (
-          <HomeBody
-            file={file}
-            onFile={setFile}
-            onPick={(tool) => setScreen(tool)}
-          />
+          <>
+            {dropError && <div className="b-error">{dropError}</div>}
+            <HomeBody
+              file={file}
+              onFile={setPicked}
+              onPick={(tool) => setScreen(tool)}
+            />
+          </>
         ) : file ? (
           <>
-            {screen === "compress" && <CompressPanel file={file} />}
-            {screen === "upscale" && <UpscalePanel file={file} />}
-            {screen === "background" && <BackgroundPanel file={file} />}
+            {screen === "compress" && (
+              <CompressPanel file={file} srcDir={srcDir} />
+            )}
+            {screen === "upscale" && <UpscalePanel file={file} srcDir={srcDir} />}
+            {screen === "background" && (
+              <BackgroundPanel file={file} srcDir={srcDir} />
+            )}
           </>
         ) : (
           <div className="home-drop" style={{ marginBottom: 0 }}>

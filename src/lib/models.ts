@@ -38,6 +38,30 @@ export function modelsDirPath(): Promise<string> {
   return invoke("models_dir_path");
 }
 
+export interface ModelsLocation {
+  /** The folder in use right now. */
+  dir: string;
+  /** The built-in location under app data. */
+  defaultDir: string;
+  /** A "models" folder next to the .exe, or null when that isn't writable. */
+  appDir: string | null;
+  /** True when `dir` is a user override. */
+  custom: boolean;
+  bytes: number;
+}
+
+export function modelsLocation(): Promise<ModelsLocation> {
+  return invoke("models_location");
+}
+
+/** `dir: null` restores the default location. */
+export function setModelsDir(
+  dir: string | null,
+  moveExisting: boolean,
+): Promise<ModelsLocation> {
+  return invoke("set_models_dir", { dir, moveExisting });
+}
+
 export interface CacheInfo {
   dir: string;
   bytes: number;

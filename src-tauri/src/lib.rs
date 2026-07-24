@@ -1,6 +1,8 @@
 mod ai;
 mod bg;
+mod fsx;
 mod models;
+mod settings;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -13,8 +15,12 @@ pub fn run() {
             models::download_model,
             models::delete_model,
             models::models_dir_path,
+            models::models_location,
+            models::set_models_dir,
             models::cache_info,
             models::clear_cache,
+            fsx::read_file_bytes,
+            fsx::write_file_bytes,
             ai::upscale_image,
             bg::remove_background,
         ])

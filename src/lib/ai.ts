@@ -18,16 +18,20 @@ export async function removeBackground(
   return toBlob(out, "image/png");
 }
 
+export interface UpscaleOpts {
+  /** Registry id of the engine: upscayl-ncnn | realesrgan-ncnn | waifu2x-ncnn. */
+  engine: string;
+  scale: number;
+  modelName: string;
+  /** waifu2x denoise level (-1…3); ignored by the Real-ESRGAN engines. */
+  denoise: number;
+}
+
 export async function upscaleImage(
   file: Blob,
-  scale: number,
-  modelName: string,
+  opts: UpscaleOpts,
 ): Promise<Blob> {
   const image = await fileToBytes(file);
-  const out: number[] = await invoke("upscale_image", {
-    image,
-    scale,
-    modelName,
-  });
+  const out: number[] = await invoke("upscale_image", { image, ...opts });
   return toBlob(out, "image/png");
 }

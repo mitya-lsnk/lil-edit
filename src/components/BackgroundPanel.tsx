@@ -9,9 +9,11 @@ import { hasTauri } from "../lib/tauri";
 
 interface Props {
   file: File;
+  /** Folder of the original — where the Save dialog should open. */
+  srcDir: string | null;
 }
 
-export function BackgroundPanel({ file }: Props) {
+export function BackgroundPanel({ file, srcDir }: Props) {
   const [models, setModels] = useState<ModelStatus[]>([]);
   const [selected, setSelected] = useState<string>("");
   const [busy, setBusy] = useState(false);
@@ -92,7 +94,7 @@ export function BackgroundPanel({ file }: Props) {
   async function onSave() {
     if (!resultBytes) return;
     const base = file.name.replace(/\.[^.]+$/, "");
-    const path = await saveBytes(resultBytes, `${base}-nobg.png`, "png");
+    const path = await saveBytes(resultBytes, `${base}-nobg.png`, "png", srcDir);
     if (path) setSaved(path);
   }
 
