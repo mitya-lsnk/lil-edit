@@ -31,7 +31,6 @@ export function CompressPanel({ file, srcDir, onSendTo, onSaved }: Props) {
   const [result, setResult] = useState<CompressResult | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [saved, setSaved] = useState<string | null>(null);
 
   // StrictMode-safe object URL for the original.
   const [originalUrl, setOriginalUrl] = useState<string>("");
@@ -44,7 +43,6 @@ export function CompressPanel({ file, srcDir, onSendTo, onSaved }: Props) {
   // Reset stale results when the source changes.
   useEffect(() => {
     setResult(null);
-    setSaved(null);
     setError(null);
   }, [file]);
 
@@ -54,7 +52,6 @@ export function CompressPanel({ file, srcDir, onSendTo, onSaved }: Props) {
   async function run() {
     setBusy(true);
     setError(null);
-    setSaved(null);
     try {
       const r = await compressFile(file, { format, quality });
       setResult((prev) => {
@@ -74,10 +71,7 @@ export function CompressPanel({ file, srcDir, onSendTo, onSaved }: Props) {
     const name = `${base}-min.${meta.ext}`;
     try {
       const path = await saveBytes(result.bytes, name, meta.ext, srcDir);
-      if (path) {
-        setSaved(path);
-        onSaved(path);
-      }
+      if (path) onSaved(path);
     } catch (e) {
       setError(String(e));
     }
@@ -156,7 +150,6 @@ export function CompressPanel({ file, srcDir, onSendTo, onSaved }: Props) {
           <button className="b-btn b-btn--yellow" onClick={onSave}>
             {s.compress.save}
           </button>
-          {saved && <span className="t-saved">{s.compress.saved} {saved}</span>}
           <PipeButtons
             current="compress"
             onSend={(tool) => {

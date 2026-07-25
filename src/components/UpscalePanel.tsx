@@ -88,7 +88,6 @@ export function UpscalePanel({ file, srcDir, onSendTo, onSaved }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [resultBytes, setResultBytes] = useState<Uint8Array | null>(null);
   const [resultUrl, setResultUrl] = useState<string>("");
-  const [saved, setSaved] = useState<string | null>(null);
 
   const [originalUrl, setOriginalUrl] = useState<string>("");
   useEffect(() => {
@@ -98,7 +97,6 @@ export function UpscalePanel({ file, srcDir, onSendTo, onSaved }: Props) {
   }, [file]);
   useEffect(() => {
     setResultBytes(null);
-    setSaved(null);
   }, [file]);
   // Derive the result URL from bytes — single-effect lifecycle is StrictMode-safe.
   useEffect(() => {
@@ -151,7 +149,6 @@ export function UpscalePanel({ file, srcDir, onSendTo, onSaved }: Props) {
     if (!engine || !model) return;
     setBusy(true);
     setError(null);
-    setSaved(null);
     try {
       const blob = await upscaleImage(file, {
         engine: engine.id,
@@ -177,10 +174,7 @@ export function UpscalePanel({ file, srcDir, onSendTo, onSaved }: Props) {
       "png",
       srcDir,
     );
-    if (path) {
-      setSaved(path);
-      onSaved(path);
-    }
+    if (path) onSaved(path);
   }
 
   if (!engine) {
@@ -293,7 +287,6 @@ export function UpscalePanel({ file, srcDir, onSendTo, onSaved }: Props) {
           <button className="b-btn b-btn--yellow" onClick={onSave}>
             {s.upscale.save}
           </button>
-          {saved && <span className="t-saved">{s.upscale.saved} {saved}</span>}
           <PipeButtons
             current="upscale"
             onSend={(tool) => {

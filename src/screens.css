@@ -338,7 +338,10 @@
 .tool-card .checker-chip {
   width: 52px;
   height: 52px;
-  border: 2px solid var(--ink);
+  /* the chip always sits on a light checkerboard (b-checker), so the ring and
+     dot stay dark in every skin/mode for contrast — not var(--ink), which
+     flips light in dark riso/te and vanished on the light checker. */
+  border: 2px solid #111;
   position: relative;
 }
 .tool-card .checker-chip .dot {
@@ -1360,6 +1363,9 @@
   align-items: flex-start;
   text-align: left;
   padding: 16px;
+  /* it's a <button>: without this it keeps the UA's dark button-text colour,
+     which turned invisible on the dark card in dark mode. */
+  color: var(--ink);
   background: var(--surface);
   border: var(--bd);
   border-radius: var(--radius);
@@ -1599,6 +1605,12 @@
   align-items: center;
   gap: 14px;
 }
+/* crop and resize share this slot; pin a common height so toggling between
+   them (or px↔%) doesn't make everything below jump. */
+.edit-crop-bar,
+.edit-resize-bar {
+  min-height: 96px;
+}
 .edit-ops {
   display: flex;
   align-items: center;
@@ -1666,7 +1678,6 @@
 .edit-canvas-wrap {
   position: relative;
   overflow: hidden;
-  box-shadow: var(--shadow);
   user-select: none;
   touch-action: none;
   max-width: 100%;

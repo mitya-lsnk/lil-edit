@@ -51,15 +51,15 @@ export function EditPanel({ file, srcDir, onSendTo, onSaved }: Props) {
   const cur = stack[pos] ?? null;
 
   const [error, setError] = useState<string | null>(null);
-  const [saved, setSaved] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState("");
   const urlRef = useRef("");
 
-  // Resize controls.
+  // Resize controls. Fields are strings so they can be emptied while typing
+  // (a plain number field snaps a cleared box back to 0).
   const [unit, setUnit] = useState<"px" | "pct">("px");
-  const [wField, setWField] = useState(0);
-  const [hField, setHField] = useState(0);
-  const [pctField, setPctField] = useState(100);
+  const [wField, setWField] = useState("");
+  const [hField, setHField] = useState("");
+  const [pctField, setPctField] = useState("100");
   const [lockRatio, setLockRatio] = useState(true);
 
   // Crop controls.
@@ -86,7 +86,6 @@ export function EditPanel({ file, srcDir, onSendTo, onSaved }: Props) {
   useEffect(() => {
     let alive = true;
     setError(null);
-    setSaved(null);
     setCropping(false);
     loadImageFromFile(file)
       .then((img) => {
@@ -125,9 +124,9 @@ export function EditPanel({ file, srcDir, onSendTo, onSaved }: Props) {
   // ---- sync the resize fields to the current canvas dimensions ----
   useEffect(() => {
     if (!cur) return;
-    setWField(cur.width);
-    setHField(cur.height);
-    setPctField(100);
+    setWField(String(cur.width));
+    setHField(String(cur.height));
+    setPctField("100");
   }, [cur]);
 
   // ---- measure the stage width so the overlay lines up with the image ----
@@ -156,7 +155,6 @@ export function EditPanel({ file, srcDir, onSendTo, onSaved }: Props) {
   function pushCanvas(next: HTMLCanvasElement) {
     setStack((prev) => [...prev.slice(0, pos + 1), next]);
     setPos((p) => p + 1);
-    setSaved(null);
   }
 
   // ---- rotate / flip (immediate) ----
@@ -176,24 +174,30 @@ export function EditPanel({ file, srcDir, onSendTo, onSaved }: Props) {
     let w: number;
     let h: number;
     if (unit === "pct") {
-      const f = Math.max(1, pctField) / 100;
-      w = Math.round(cur.width * f);
-      h = Math.round(cur.height * f);
+      const p = Number(pctField);
+      if (!Number.isFinite(p) || p <= 0) return;
+      w = Math.round((cur.width * p) / 100);
+      h = Math.round((cur.height * p) / 100);
     } else {
-      w = Math.max(1, Math.round(wField));
-      h = Math.max(1, Math.round(hField));
+      w = Math.round(Number(wField));
+      h = Math.round(Number(hField));
+      if (!Number.isFinite(w) || !Number.isFinite(h) || w < 1 || h < 1) return;
     }
     if (w === cur.width && h === cur.height) return;
     pushCanvas(resizeCanvas(cur, w, h));
   }
 
-  function onWidth(v: number) {
+  function onWidth(v: string) {
     setWField(v);
-    if (lockRatio) setHField(Math.max(1, Math.round(v / baseAspect)));
+    const n = Number(v);
+    if (lockRatio && v !== "" && n > 0)
+      setHField(String(Math.max(1, Math.round(n / baseAspect))));
   }
-  function onHeight(v: number) {
+  function onHeight(v: string) {
     setHField(v);
-    if (lockRatio) setWField(Math.max(1, Math.round(v * baseAspect)));
+    const n = Number(v);
+    if (lockRatio && v !== "" && n > 0)
+      setWField(String(Math.max(1, Math.round(n * baseAspect))));
   }
 
   // ---- crop ----
@@ -329,13 +333,15 @@ export function EditPanel({ file, srcDir, onSendTo, onSaved }: Props) {
               <label className="edit-num">
                 <span className="t-label">{s.edit.width}</span>
                 <input className="t-num" type="number" min={1} value={wField}
-                  onChange={(e) => onWidth(Number(e.target.value))} />
+                  onFocus={(e) => e.currentTarget.select()}
+                  onChange={(e) => onWidth(e.target.value)} />
               </label>
               <span className="edit-x">×</span>
               <label className="edit-num">
                 <span className="t-label">{s.edit.height}</span>
                 <input className="t-num" type="number" min={1} value={hField}
-                  onChange={(e) => onHeight(Number(e.target.value))} />
+                  onFocus={(e) => e.currentTarget.select()}
+                  onChange={(e) => onHeight(e.target.value)} />
               </label>
               <label className="t-check edit-lock">
                 <input type="checkbox" checked={lockRatio} onChange={(e) => setLockRatio(e.target.checked)} />
@@ -344,9 +350,10 @@ export function EditPanel({ file, srcDir, onSendTo, onSaved }: Props) {
             </>
           ) : (
             <label className="edit-num">
-              <span className="t-label">{s.edit.percent} · {pctField}%</span>
+              <span className="t-label">{s.edit.percent} · {pctField || 0}%</span>
               <input className="t-num" type="number" min={1} max={1000} value={pctField}
-                onChange={(e) => setPctField(Number(e.target.value))} />
+                onFocus={(e) => e.currentTarget.select()}
+                onChange={(e) => setPctField(e.target.value)} />
             </label>
           )}
 
@@ -400,7 +407,6 @@ export function EditPanel({ file, srcDir, onSendTo, onSaved }: Props) {
       {/* ---------- save / pipe ---------- */}
       <div className="t-actions">
         <button className="b-btn b-btn--yellow" onClick={onSave}>{s.edit.save}</button>
-        {saved && <span className="t-saved">{s.edit.saved} {saved}</span>}
         <PipeButtons current="edit" onSend={pipe} />
       </div>
     </div>
@@ -412,10 +418,7 @@ export function EditPanel({ file, srcDir, onSendTo, onSaved }: Props) {
       const bytes = await canvasToPngBytes(cur);
       const base = file.name.replace(/\.[^.]+$/, "");
       const path = await saveBytes(bytes, `${base}-edit.png`, "png", srcDir);
-      if (path) {
-        setSaved(path);
-        onSaved(path);
-      }
+      if (path) onSaved(path);
     } catch (e) {
       setError(String(e));
     }

@@ -327,7 +327,9 @@
   background: var(--accent-3);
 }
 [data-skin="te"] .tool-card.c4::before {
-  background: var(--ok);
+  /* TE's --accent-3 (c3) and --ok are the same green, so c4 would clash with
+     Remove BG — give Edit its own amber here. */
+  background: var(--warn);
 }
 [data-skin="te"] .tool-card .tname,
 [data-skin="te"] .tool-card.c3 .tname,
@@ -360,8 +362,8 @@
   color: #fff;
 }
 [data-skin="te"] .tool-card.c4 .run {
-  background: var(--ok);
-  color: #fff;
+  background: var(--warn);
+  color: #241000;
 }
 
 /* solid CTA becomes the orange pill */

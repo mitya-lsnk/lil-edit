@@ -28,7 +28,6 @@ export function BackgroundPanel({ file, srcDir, onSendTo, onSaved }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [resultBytes, setResultBytes] = useState<Uint8Array | null>(null);
   const [resultUrl, setResultUrl] = useState<string>("");
-  const [saved, setSaved] = useState<string | null>(null);
 
   const [originalUrl, setOriginalUrl] = useState<string>("");
   useEffect(() => {
@@ -38,7 +37,6 @@ export function BackgroundPanel({ file, srcDir, onSendTo, onSaved }: Props) {
   }, [file]);
   useEffect(() => {
     setResultBytes(null);
-    setSaved(null);
   }, [file]);
   // Derive the result URL from bytes — single-effect lifecycle is StrictMode-safe.
   useEffect(() => {
@@ -83,7 +81,6 @@ export function BackgroundPanel({ file, srcDir, onSendTo, onSaved }: Props) {
     if (!selected) return;
     setBusy(true);
     setError(null);
-    setSaved(null);
     try {
       const blob = await removeBackground(file, selected);
       const buf = new Uint8Array(await blob.arrayBuffer());
@@ -99,10 +96,7 @@ export function BackgroundPanel({ file, srcDir, onSendTo, onSaved }: Props) {
     if (!resultBytes) return;
     const base = file.name.replace(/\.[^.]+$/, "");
     const path = await saveBytes(resultBytes, `${base}-nobg.png`, "png", srcDir);
-    if (path) {
-      setSaved(path);
-      onSaved(path);
-    }
+    if (path) onSaved(path);
   }
 
   if (downloaded.length === 0) {
@@ -166,7 +160,6 @@ export function BackgroundPanel({ file, srcDir, onSendTo, onSaved }: Props) {
           <button className="b-btn b-btn--yellow" onClick={onSave}>
             {s.background.save}
           </button>
-          {saved && <span className="t-saved">{s.background.saved} {saved}</span>}
           <PipeButtons
             current="background"
             onSend={(tool) => {
