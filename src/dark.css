@@ -53,6 +53,25 @@
   background: var(--surface-2);
 }
 
+/* The tool cards keep their bright light-mode fills (yellow/pink/blue) in dark
+   mode — those surfaces don't flip. But --ink does flip to light, so text and
+   the RUN button (background: var(--ink)) washed out on the bright cards. Pin
+   the on-card ink back to dark. c3 (blue) already uses white text, leave it. */
+[data-mode="dark"][data-skin="brutal"] .tool-card.c1,
+[data-mode="dark"][data-skin="brutal"] .tool-card.c2 {
+  color: #111111;
+}
+[data-mode="dark"][data-skin="brutal"] .tool-card .run,
+[data-mode="dark"][data-skin="brutal"] .tool-card .stat {
+  background: #111111;
+}
+[data-mode="dark"][data-skin="brutal"] .tool-card .checker-chip {
+  border-color: #111111;
+}
+[data-mode="dark"][data-skin="brutal"] .tool-card .checker-chip .dot {
+  background: #111111;
+}
+
 /* =====================================================================
    JAPANESE RISO POP — dark: warm near-black paper, cream ink, the inks
    (vermilion + cobalt) brighten so they still pop. The cobalt offset
@@ -159,4 +178,12 @@
 /* error banner: danger is a light colour in dark mode → dark text on it */
 [data-mode="dark"] .b-error {
   color: #111111;
+}
+
+/* Buttons in dark mode are often light-filled (solid CTA inverts to cream). The
+   brutalist hard offset shadow follows --ink (now light), which read as a white
+   halo behind those buttons. Drop the button shadow in dark — the fill contrast
+   already separates them from the page — and keep just the hover lift. */
+[data-mode="dark"] .b-btn:hover {
+  box-shadow: none;
 }

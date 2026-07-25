@@ -13,8 +13,10 @@ import {
 } from "../lib/models";
 import { formatBytes } from "../lib/format";
 import { hasTauri } from "../lib/tauri";
+import { useStrings } from "../lib/i18n";
 
 export function SettingsScreen() {
+  const str = useStrings();
   const { skin, setSkin } = useSkin();
   const [cache, setCache] = useState<CacheInfo | null>(null);
   const [clearing, setClearing] = useState(false);
@@ -44,9 +46,7 @@ export function SettingsScreen() {
     try {
       setLoc(await setModelsDir(dir, moveExisting));
       setNote(
-        moveExisting
-          ? "Папка изменена, скачанное перенесено."
-          : "Папка изменена.",
+        moveExisting ? str.settings.folderChangedMoved : str.settings.folderChanged,
       );
       refreshCache();
     } catch (e) {
@@ -66,7 +66,7 @@ export function SettingsScreen() {
     setNote(null);
     try {
       const freed = await clearCache();
-      setNote(`Освобождено ${formatBytes(freed)}.`);
+      setNote(str.settings.freed(formatBytes(freed)));
       setConfirm(false);
       refreshCache();
     } catch (e) {
@@ -80,39 +80,39 @@ export function SettingsScreen() {
     <div className="settings">
       {/* -------- Appearance -------- */}
       <section className="set-sec">
-        <h3 className="set-h">Оформление</h3>
-        <p className="set-lead">
-          Скин меняет весь интерфейс — цвета, шрифты, формы и анимации. Выбор
-          запоминается.
-        </p>
+        <h3 className="set-h">{str.settings.appearance}</h3>
+        <p className="set-lead">{str.settings.appearanceLead}</p>
         <div className="skin-grid">
-          {SKINS.map((s) => (
-            <button
-              key={s.id}
-              className={`skin-card ${skin === s.id ? "active" : ""}`}
-              onClick={() => setSkin(s.id)}
-            >
-              <span
-                className="skin-card-sw"
-                style={{
-                  background: `linear-gradient(135deg, ${s.swatch[0]} 0 50%, ${s.swatch[1]} 50% 100%)`,
-                }}
-              />
-              <span className="skin-card-name">{s.name}</span>
-              <span className="skin-card-tag">{s.tagline}</span>
-              {skin === s.id && <span className="skin-card-on">✓ выбран</span>}
-            </button>
-          ))}
+          {SKINS.map((sk) => {
+            const meta = str.skins[sk.id];
+            return (
+              <button
+                key={sk.id}
+                className={`skin-card ${skin === sk.id ? "active" : ""}`}
+                onClick={() => setSkin(sk.id)}
+              >
+                <span
+                  className="skin-card-sw"
+                  style={{
+                    background: `linear-gradient(135deg, ${sk.swatch[0]} 0 50%, ${sk.swatch[1]} 50% 100%)`,
+                  }}
+                />
+                <span className="skin-card-name">{meta.name}</span>
+                <span className="skin-card-tag">{meta.tagline}</span>
+                {skin === sk.id && (
+                  <span className="skin-card-on">{str.settings.chosen}</span>
+                )}
+              </button>
+            );
+          })}
         </div>
       </section>
 
       {/* -------- Cache -------- */}
       <section className="set-sec">
-        <h3 className="set-h">Хранилище моделей</h3>
+        <h3 className="set-h">{str.settings.storage}</h3>
         {!tauri ? (
-          <p className="set-lead">
-            Управление кешем доступно в приложении (не в браузере).
-          </p>
+          <p className="set-lead">{str.settings.cacheBrowserNote}</p>
         ) : (
           <>
             <div className="set-cache">
@@ -120,29 +120,29 @@ export function SettingsScreen() {
                 <span className="set-stat-num">
                   {cache ? formatBytes(cache.bytes) : "…"}
                 </span>
-                <span className="set-stat-lbl">на диске</span>
+                <span className="set-stat-lbl">{str.settings.onDisk}</span>
               </div>
               <div className="set-stat">
                 <span className="set-stat-num">{cache ? cache.installed : "…"}</span>
-                <span className="set-stat-lbl">моделей установлено</span>
+                <span className="set-stat-lbl">{str.settings.modelsInstalled}</span>
               </div>
               <div className="set-cache-act">
                 {confirm ? (
                   <>
-                    <span className="set-warn-txt">Удалить все модели?</span>
+                    <span className="set-warn-txt">{str.settings.deleteAll}</span>
                     <button
                       className="b-btn b-btn--solid"
                       disabled={clearing}
                       onClick={onClear}
                     >
-                      {clearing ? "Удаляю…" : "Да, очистить"}
+                      {clearing ? str.settings.deleting : str.settings.yesClear}
                     </button>
                     <button
                       className="b-btn"
                       disabled={clearing}
                       onClick={() => setConfirm(false)}
                     >
-                      Отмена
+                      {str.settings.cancel}
                     </button>
                   </>
                 ) : (
@@ -151,7 +151,7 @@ export function SettingsScreen() {
                     disabled={!cache || cache.bytes === 0}
                     onClick={() => setConfirm(true)}
                   >
-                    Очистить кеш
+                    {str.settings.clearCache}
                   </button>
                 )}
               </div>
@@ -161,12 +161,12 @@ export function SettingsScreen() {
             {/* Where the models live. People install the app on one drive and
                 are (rightly) annoyed when gigabytes land on another. */}
             <div className="set-loc">
-              <span className="set-loc-lbl">Папка моделей</span>
+              <span className="set-loc-lbl">{str.settings.folder}</span>
               {loc && (
                 <button
                   className="set-path"
                   onClick={() => openUrl(`file://${loc.dir}`)}
-                  title="Открыть папку"
+                  title={str.settings.openFolder}
                 >
                   {loc.dir}
                 </button>
@@ -178,11 +178,11 @@ export function SettingsScreen() {
                   disabled={moving}
                   onChange={(e) => setMoveExisting(e.target.checked)}
                 />
-                переносить уже скачанное
+                {str.settings.moveExisting}
               </label>
               <div className="set-loc-act">
                 <button className="b-btn" disabled={moving} onClick={onPickDir}>
-                  {moving ? "Переношу…" : "Выбрать папку…"}
+                  {moving ? str.settings.moving : str.settings.pickFolder}
                 </button>
                 {loc?.appDir && loc.dir !== loc.appDir && (
                   <button
@@ -191,7 +191,7 @@ export function SettingsScreen() {
                     onClick={() => relocate(loc.appDir)}
                     title={loc.appDir}
                   >
-                    Рядом с программой
+                    {str.settings.nearProgram}
                   </button>
                 )}
                 {loc?.custom && (
@@ -201,7 +201,7 @@ export function SettingsScreen() {
                     onClick={() => relocate(null)}
                     title={loc.defaultDir}
                   >
-                    По умолчанию
+                    {str.settings.default}
                   </button>
                 )}
               </div>
@@ -212,31 +212,27 @@ export function SettingsScreen() {
 
       {/* -------- Models -------- */}
       <section className="set-sec">
-        <h3 className="set-h">Модели удаления фона</h3>
+        <h3 className="set-h">{str.settings.bgModels}</h3>
         {tauri ? (
           <ModelManager filter="background" onChanged={refreshCache} />
         ) : (
-          <p className="set-lead">Доступно в приложении.</p>
+          <p className="set-lead">{str.settings.inApp}</p>
         )}
       </section>
 
       <section className="set-sec">
-        <h3 className="set-h">Движки апскейла</h3>
+        <h3 className="set-h">{str.settings.upscaleEngines}</h3>
         {tauri ? (
           <ModelManager filter="upscale" onChanged={refreshCache} />
         ) : (
-          <p className="set-lead">Доступно в приложении.</p>
+          <p className="set-lead">{str.settings.inApp}</p>
         )}
       </section>
 
       {/* -------- About -------- */}
       <section className="set-sec">
-        <h3 className="set-h">О программе</h3>
-        <p className="set-lead">
-          <b>lil image</b> — локальный набор инструментов для изображений:
-          сжатие, апскейл и удаление фона. Всё считается на вашем компьютере,
-          без отправки в сеть.
-        </p>
+        <h3 className="set-h">{str.settings.aboutTitle}</h3>
+        {str.settings.about}
       </section>
     </div>
   );

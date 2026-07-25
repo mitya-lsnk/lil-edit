@@ -1,8 +1,19 @@
 {
-  "name": "im-mage",
+  "name": "lil-image",
   "private": true,
   "version": "0.1.0",
   "type": "module",
+  "description": "Cross-platform desktop image toolkit: compression, background removal, and upscaling — all local and offline.",
+  "license": "MIT",
+  "author": "mitya-lsnk",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mitya-lsnk/lil-image.git"
+  },
+  "homepage": "https://github.com/mitya-lsnk/lil-image#readme",
+  "bugs": {
+    "url": "https://github.com/mitya-lsnk/lil-image/issues"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",

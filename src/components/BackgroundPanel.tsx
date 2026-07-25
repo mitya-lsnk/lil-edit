@@ -4,16 +4,24 @@ import { removeBackground } from "../lib/ai";
 import { saveBytes } from "../lib/save";
 import { ModelManager } from "./ModelManager";
 import { Compare } from "./Compare";
+import { PipeButtons } from "./PipeButtons";
+import type { Tool } from "./HomeScreen";
 import { formatBytes } from "../lib/format";
 import { hasTauri } from "../lib/tauri";
+import { useStrings } from "../lib/i18n";
 
 interface Props {
   file: File;
   /** Folder of the original — where the Save dialog should open. */
   srcDir: string | null;
+  /** Hand the result to another tool as its next input. */
+  onSendTo: (file: File, tool: Tool) => void;
+  /** Fired with the saved path after a successful save. */
+  onSaved: (path: string) => void;
 }
 
-export function BackgroundPanel({ file, srcDir }: Props) {
+export function BackgroundPanel({ file, srcDir, onSendTo, onSaved }: Props) {
+  const s = useStrings();
   const [models, setModels] = useState<ModelStatus[]>([]);
   const [selected, setSelected] = useState<string>("");
   const [busy, setBusy] = useState(false);
@@ -66,11 +74,7 @@ export function BackgroundPanel({ file, srcDir }: Props) {
     return (
       <div className="t-info">
         <div className="t-info-icon">🖥</div>
-        <p>
-          <b>Удаление фона работает в приложении lil image.</b> Ему нужен локальный
-          AI-движок из Rust-бэкенда, которого нет в браузере. Запусти{" "}
-          <code>npm run tauri dev</code> — там всё заработает.
-        </p>
+        {s.background.browser}
       </div>
     );
   }
@@ -95,18 +99,18 @@ export function BackgroundPanel({ file, srcDir }: Props) {
     if (!resultBytes) return;
     const base = file.name.replace(/\.[^.]+$/, "");
     const path = await saveBytes(resultBytes, `${base}-nobg.png`, "png", srcDir);
-    if (path) setSaved(path);
+    if (path) {
+      setSaved(path);
+      onSaved(path);
+    }
   }
 
   if (downloaded.length === 0) {
     return (
       <div>
         <div className="onboard">
-          <div className="onboard-title">Выберите модель</div>
-          <p>
-            Скачивается один раз, работает <b>локально и офлайн</b>. Топ качества
-            — <b>BiRefNet</b>; для быстрой пробы хватит <b>U²-Net (lite)</b>.
-          </p>
+          <div className="onboard-title">{s.background.onboardTitle}</div>
+          {s.background.onboard}
         </div>
         <ModelManager filter="background" onChanged={refresh} />
       </div>
@@ -117,7 +121,7 @@ export function BackgroundPanel({ file, srcDir }: Props) {
     <div>
       <div className="t-controls">
         <div className="t-field">
-          <span className="t-label">Модель</span>
+          <span className="t-label">{s.background.model}</span>
           <select
             className="t-select"
             value={selected}
@@ -131,7 +135,7 @@ export function BackgroundPanel({ file, srcDir }: Props) {
           </select>
         </div>
         <button className="b-btn b-btn--solid" onClick={run} disabled={busy}>
-          {busy ? "Обрабатываю…" : "Удалить фон →"}
+          {busy ? s.background.running : s.background.run}
         </button>
       </div>
 
@@ -141,8 +145,8 @@ export function BackgroundPanel({ file, srcDir }: Props) {
         <Compare
           beforeUrl={originalUrl}
           afterUrl={resultUrl}
-          beforeLabel="ОРИГИНАЛ"
-          afterLabel="БЕЗ ФОНА"
+          beforeLabel={s.background.original}
+          afterLabel={s.background.nobg}
           afterMeta={resultBytes ? formatBytes(resultBytes.length) : undefined}
           transparent
         />
@@ -152,7 +156,7 @@ export function BackgroundPanel({ file, srcDir }: Props) {
             {originalUrl && <img src={originalUrl} alt="original" />}
           </div>
           <div className="cmp-cap" style={{ borderTop: "3px solid var(--line)" }}>
-            <span>ОРИГИНАЛ</span>
+            <span>{s.background.original}</span>
           </div>
         </div>
       )}
@@ -160,14 +164,27 @@ export function BackgroundPanel({ file, srcDir }: Props) {
       {resultUrl && (
         <div className="t-actions">
           <button className="b-btn b-btn--yellow" onClick={onSave}>
-            Сохранить PNG ↓
+            {s.background.save}
           </button>
-          {saved && <span className="t-saved">Сохранено: {saved}</span>}
+          {saved && <span className="t-saved">{s.background.saved} {saved}</span>}
+          <PipeButtons
+            current="background"
+            onSend={(tool) => {
+              if (!resultBytes) return;
+              const base = file.name.replace(/\.[^.]+$/, "");
+              onSendTo(
+                new File([resultBytes as BlobPart], `${base}-nobg.png`, {
+                  type: "image/png",
+                }),
+                tool,
+              );
+            }}
+          />
         </div>
       )}
 
       <details className="m-details">
-        <summary>Модели фона</summary>
+        <summary>{s.background.details}</summary>
         <ModelManager filter="background" onChanged={refresh} />
       </details>
     </div>

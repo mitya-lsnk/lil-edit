@@ -8,20 +8,26 @@ import {
 import { formatBytes, pct } from "../lib/format";
 import { saveBytes } from "../lib/save";
 import { Compare } from "./Compare";
+import { PipeButtons } from "./PipeButtons";
+import type { Tool } from "./HomeScreen";
+import { useStrings } from "../lib/i18n";
 
 interface Props {
   file: File;
   /** Folder of the original — where the Save dialog should open. */
   srcDir: string | null;
+  /** Hand the result to another tool as its next input. */
+  onSendTo: (file: File, tool: Tool) => void;
+  /** Fired with the saved path after a successful save. */
+  onSaved: (path: string) => void;
 }
 
 const FORMATS: OutputFormat[] = ["mozjpeg", "webp", "avif", "oxipng"];
 
-export function CompressPanel({ file, srcDir }: Props) {
+export function CompressPanel({ file, srcDir, onSendTo, onSaved }: Props) {
+  const s = useStrings();
   const [format, setFormat] = useState<OutputFormat>("mozjpeg");
   const [quality, setQuality] = useState(75);
-  const [resize, setResize] = useState(false);
-  const [maxDim, setMaxDim] = useState(2000);
   const [result, setResult] = useState<CompressResult | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -50,11 +56,7 @@ export function CompressPanel({ file, srcDir }: Props) {
     setError(null);
     setSaved(null);
     try {
-      const r = await compressFile(file, {
-        format,
-        quality,
-        maxDimension: resize ? maxDim : undefined,
-      });
+      const r = await compressFile(file, { format, quality });
       setResult((prev) => {
         if (prev) URL.revokeObjectURL(prev.url);
         return r;
@@ -72,7 +74,10 @@ export function CompressPanel({ file, srcDir }: Props) {
     const name = `${base}-min.${meta.ext}`;
     try {
       const path = await saveBytes(result.bytes, name, meta.ext, srcDir);
-      if (path) setSaved(path);
+      if (path) {
+        setSaved(path);
+        onSaved(path);
+      }
     } catch (e) {
       setError(String(e));
     }
@@ -82,60 +87,44 @@ export function CompressPanel({ file, srcDir }: Props) {
 
   return (
     <div>
-      <div className="t-controls">
-        <div className="t-field">
-          <span className="t-label">Формат</span>
-          <div className="t-seg">
-            {FORMATS.map((f) => (
-              <button
-                key={f}
-                className={format === f ? "active" : ""}
-                onClick={() => setFormat(f)}
-              >
-                {FORMAT_META[f].label.split(" ")[0]}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {lossy && (
+      <div className="t-controls compress-controls">
+        <div className="cc-left">
           <div className="t-field">
-            <span className="t-label">Качество · {quality}</span>
-            <input
-              className="t-range"
-              type="range"
-              min={1}
-              max={100}
-              value={quality}
-              onChange={(e) => setQuality(Number(e.target.value))}
-            />
+            <span className="t-label">{s.compress.format}</span>
+            <div className="t-seg">
+              {FORMATS.map((f) => (
+                <button
+                  key={f}
+                  className={format === f ? "active" : ""}
+                  onClick={() => setFormat(f)}
+                >
+                  {FORMAT_META[f].label.split(" ")[0]}
+                </button>
+              ))}
+            </div>
           </div>
-        )}
 
-        <div className="t-field">
-          <span className="t-label">Уменьшить</span>
-          <label className="t-check">
-            <input
-              type="checkbox"
-              checked={resize}
-              onChange={(e) => setResize(e.target.checked)}
-            />
-            до
-            <input
-              type="number"
-              className="t-num"
-              value={maxDim}
-              min={64}
-              step={100}
-              disabled={!resize}
-              onChange={(e) => setMaxDim(Number(e.target.value))}
-            />
-            px
-          </label>
+          {lossy && (
+            <div className="t-field">
+              <span className="t-label">{s.compress.quality} · {quality}</span>
+              <input
+                className="t-range"
+                type="range"
+                min={1}
+                max={100}
+                value={quality}
+                onChange={(e) => setQuality(Number(e.target.value))}
+              />
+            </div>
+          )}
         </div>
 
-        <button className="b-btn b-btn--solid" onClick={run} disabled={busy}>
-          {busy ? "Сжимаю…" : "Сжать →"}
+        <button
+          className="b-btn b-btn--solid cc-run"
+          onClick={run}
+          disabled={busy}
+        >
+          {busy ? s.compress.running : s.compress.run}
         </button>
       </div>
 
@@ -145,7 +134,7 @@ export function CompressPanel({ file, srcDir }: Props) {
         <Compare
           beforeUrl={originalUrl}
           afterUrl={result.url}
-          beforeLabel="ОРИГИНАЛ"
+          beforeLabel={s.compress.original}
           afterLabel={meta.label.split(" ")[0]}
           beforeMeta={formatBytes(file.size)}
           afterMeta={`${formatBytes(result.size)} · −${saving < 0 ? 0 : saving}% · ${result.ms}ms`}
@@ -156,7 +145,7 @@ export function CompressPanel({ file, srcDir }: Props) {
             {originalUrl && <img src={originalUrl} alt="original" />}
           </div>
           <div className="cmp-cap" style={{ borderTop: "3px solid var(--line)" }}>
-            <span>ОРИГИНАЛ</span>
+            <span>{s.compress.original}</span>
             <span>{formatBytes(file.size)}</span>
           </div>
         </div>
@@ -165,9 +154,22 @@ export function CompressPanel({ file, srcDir }: Props) {
       {result && (
         <div className="t-actions">
           <button className="b-btn b-btn--yellow" onClick={onSave}>
-            Сохранить ↓
+            {s.compress.save}
           </button>
-          {saved && <span className="t-saved">Сохранено: {saved}</span>}
+          {saved && <span className="t-saved">{s.compress.saved} {saved}</span>}
+          <PipeButtons
+            current="compress"
+            onSend={(tool) => {
+              if (!result) return;
+              const base = file.name.replace(/\.[^.]+$/, "");
+              onSendTo(
+                new File([result.bytes], `${base}-min.${meta.ext}`, {
+                  type: meta.mime,
+                }),
+                tool,
+              );
+            }}
+          />
         </div>
       )}
     </div>

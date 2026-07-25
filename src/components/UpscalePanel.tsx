@@ -4,18 +4,24 @@ import { upscaleImage } from "../lib/ai";
 import { saveBytes } from "../lib/save";
 import { ModelManager } from "./ModelManager";
 import { Compare } from "./Compare";
+import { PipeButtons } from "./PipeButtons";
+import type { Tool } from "./HomeScreen";
 import { formatBytes } from "../lib/format";
 import { hasTauri } from "../lib/tauri";
+import { useStrings } from "../lib/i18n";
 
 interface Props {
   file: File;
   /** Folder of the original — where the Save dialog should open. */
   srcDir: string | null;
+  /** Hand the result to another tool as its next input. */
+  onSendTo: (file: File, tool: Tool) => void;
+  /** Fired with the saved path after a successful save. */
+  onSaved: (path: string) => void;
 }
 
 interface EngineModel {
   value: string;
-  label: string;
   /** Scales this model can actually produce. */
   scales: number[];
 }
@@ -38,11 +44,11 @@ const ENGINES: EngineDef[] = [
     short: "Upscayl",
     denoise: false,
     models: [
-      { value: "upscayl-standard-4x", label: "Стандарт · универсальная", scales: FOUR },
-      { value: "remacri-4x", label: "Remacri · фото", scales: FOUR },
-      { value: "ultrasharp-4x", label: "UltraSharp · максимум резкости", scales: FOUR },
-      { value: "digital-art-4x", label: "Digital Art · рисунки, рендеры", scales: FOUR },
-      { value: "upscayl-lite-4x", label: "Lite · быстрая", scales: FOUR },
+      { value: "upscayl-standard-4x", scales: FOUR },
+      { value: "remacri-4x", scales: FOUR },
+      { value: "ultrasharp-4x", scales: FOUR },
+      { value: "digital-art-4x", scales: FOUR },
+      { value: "upscayl-lite-4x", scales: FOUR },
     ],
   },
   {
@@ -50,9 +56,9 @@ const ENGINES: EngineDef[] = [
     short: "Real-ESRGAN",
     denoise: false,
     models: [
-      { value: "realesrgan-x4plus", label: "General (x4plus)", scales: FOUR },
-      { value: "realesrgan-x4plus-anime", label: "Anime (x4plus)", scales: FOUR },
-      { value: "realesr-animevideov3", label: "Anime video (v3)", scales: FOUR },
+      { value: "realesrgan-x4plus", scales: FOUR },
+      { value: "realesrgan-x4plus-anime", scales: FOUR },
+      { value: "realesr-animevideov3", scales: FOUR },
     ],
   },
   {
@@ -61,26 +67,18 @@ const ENGINES: EngineDef[] = [
     denoise: true,
     models: [
       // Only cunet ships a noise-only (scale 1) model; the upconv sets are 2x-native.
-      { value: "models-cunet", label: "CUNet · аниме, лучшее качество", scales: [1, 2, 4, 8] },
-      {
-        value: "models-upconv_7_anime_style_art_rgb",
-        label: "UpConv7 · аниме, быстрее",
-        scales: [2, 4, 8],
-      },
-      { value: "models-upconv_7_photo", label: "UpConv7 · фото", scales: [2, 4, 8] },
+      { value: "models-cunet", scales: [1, 2, 4, 8] },
+      { value: "models-upconv_7_anime_style_art_rgb", scales: [2, 4, 8] },
+      { value: "models-upconv_7_photo", scales: [2, 4, 8] },
     ],
   },
 ];
 
-const DENOISE = [
-  { value: -1, label: "нет" },
-  { value: 0, label: "0" },
-  { value: 1, label: "1" },
-  { value: 2, label: "2" },
-  { value: 3, label: "3" },
-];
+// waifu2x denoise levels; -1 renders as the localized "off".
+const DENOISE = [-1, 0, 1, 2, 3];
 
-export function UpscalePanel({ file, srcDir }: Props) {
+export function UpscalePanel({ file, srcDir, onSendTo, onSaved }: Props) {
+  const s = useStrings();
   const [models, setModels] = useState<ModelStatus[]>([]);
   const [engineId, setEngineId] = useState<string | null>(null);
   const [modelValue, setModelValue] = useState<string | null>(null);
@@ -144,11 +142,7 @@ export function UpscalePanel({ file, srcDir }: Props) {
     return (
       <div className="t-info">
         <div className="t-info-icon">🖥</div>
-        <p>
-          <b>Апскейл работает в приложении lil image.</b> Ему нужен движок ncnn
-          и GPU через Vulkan — в браузере их нет. Запусти{" "}
-          <code>npm run tauri dev</code>.
-        </p>
+        {s.upscale.browser}
       </div>
     );
   }
@@ -183,20 +177,18 @@ export function UpscalePanel({ file, srcDir }: Props) {
       "png",
       srcDir,
     );
-    if (path) setSaved(path);
+    if (path) {
+      setSaved(path);
+      onSaved(path);
+    }
   }
 
   if (!engine) {
     return (
       <div>
         <div className="onboard">
-          <div className="onboard-title">Сначала — движок</div>
-          <p>
-            Апскейл считается на <b>GPU через Vulkan</b> отдельной программой:
-            её нужно <b>один раз скачать</b>, дальше всё локально и офлайн.
-            Движков три — начните с <b>Upscayl</b>, он самый свежий и с лучшими
-            моделями.
-          </p>
+          <div className="onboard-title">{s.upscale.onboardTitle}</div>
+          {s.upscale.onboard}
         </div>
         <ModelManager filter="upscale" onChanged={refresh} />
       </div>
@@ -208,7 +200,7 @@ export function UpscalePanel({ file, srcDir }: Props) {
       <div className="t-controls">
         {installed.length > 1 && (
           <div className="t-field">
-            <span className="t-label">Движок</span>
+            <span className="t-label">{s.upscale.engine}</span>
             <div className="t-seg">
               {installed.map((e) => (
                 <button
@@ -226,7 +218,7 @@ export function UpscalePanel({ file, srcDir }: Props) {
           </div>
         )}
         <div className="t-field">
-          <span className="t-label">Модель</span>
+          <span className="t-label">{s.upscale.model}</span>
           <select
             className="t-select"
             value={model?.value}
@@ -234,13 +226,13 @@ export function UpscalePanel({ file, srcDir }: Props) {
           >
             {engine.models.map((m) => (
               <option key={m.value} value={m.value}>
-                {m.label}
+                {s.upscale.modelLabels[m.value] ?? m.value}
               </option>
             ))}
           </select>
         </div>
         <div className="t-field">
-          <span className="t-label">Масштаб</span>
+          <span className="t-label">{s.upscale.scale}</span>
           <div className="t-seg">
             {scales.map((s) => (
               <button
@@ -255,37 +247,33 @@ export function UpscalePanel({ file, srcDir }: Props) {
         </div>
         {engine.denoise && (
           <div className="t-field">
-            <span className="t-label">Шумодав</span>
+            <span className="t-label">{s.upscale.denoise}</span>
             <div className="t-seg">
               {DENOISE.map((d) => (
                 <button
-                  key={d.value}
-                  className={denoise === d.value ? "active" : ""}
-                  onClick={() => setDenoise(d.value)}
+                  key={d}
+                  className={denoise === d ? "active" : ""}
+                  onClick={() => setDenoise(d)}
                 >
-                  {d.label}
+                  {d === -1 ? s.upscale.denoiseNone : String(d)}
                 </button>
               ))}
             </div>
           </div>
         )}
         <button className="b-btn b-btn--solid" onClick={run} disabled={busy}>
-          {busy ? "Апскейл…" : "Увеличить →"}
+          {busy ? s.upscale.running : s.upscale.run}
         </button>
       </div>
 
-      {busy && (
-        <p className="t-muted">
-          Обработка может занять от секунд до минуты — зависит от размера и GPU.
-        </p>
-      )}
+      {busy && <p className="t-muted">{s.upscale.busyNote}</p>}
       {error && <div className="b-error">{error}</div>}
 
       {resultUrl ? (
         <Compare
           beforeUrl={originalUrl}
           afterUrl={resultUrl}
-          beforeLabel="ОРИГИНАЛ"
+          beforeLabel={s.upscale.original}
           afterLabel={`×${effScale}`}
           afterMeta={resultBytes ? formatBytes(resultBytes.length) : undefined}
         />
@@ -295,7 +283,7 @@ export function UpscalePanel({ file, srcDir }: Props) {
             {originalUrl && <img src={originalUrl} alt="original" />}
           </div>
           <div className="cmp-cap" style={{ borderTop: "3px solid var(--line)" }}>
-            <span>ОРИГИНАЛ</span>
+            <span>{s.upscale.original}</span>
           </div>
         </div>
       )}
@@ -303,14 +291,27 @@ export function UpscalePanel({ file, srcDir }: Props) {
       {resultUrl && (
         <div className="t-actions">
           <button className="b-btn b-btn--yellow" onClick={onSave}>
-            Сохранить PNG ↓
+            {s.upscale.save}
           </button>
-          {saved && <span className="t-saved">Сохранено: {saved}</span>}
+          {saved && <span className="t-saved">{s.upscale.saved} {saved}</span>}
+          <PipeButtons
+            current="upscale"
+            onSend={(tool) => {
+              if (!resultBytes) return;
+              const base = file.name.replace(/\.[^.]+$/, "");
+              onSendTo(
+                new File([resultBytes as BlobPart], `${base}-x${effScale}.png`, {
+                  type: "image/png",
+                }),
+                tool,
+              );
+            }}
+          />
         </div>
       )}
 
       <details className="m-details">
-        <summary>Движки апскейла</summary>
+        <summary>{s.upscale.details}</summary>
         <ModelManager filter="upscale" onChanged={refresh} />
       </details>
     </div>

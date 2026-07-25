@@ -37,6 +37,13 @@
   --dur: 0.13s;
   --ease: cubic-bezier(0.2, 0, 0, 1);
   --hover-lift: translate(-2px, -2px);
+
+  /* Science Gothic Bold carries both Latin and Cyrillic, so RU and EN render in
+     one real bold weight here (the default display/head faces are Latin-only,
+     which left Russian on a mismatched system fallback). Listed first so both
+     scripts resolve to it. */
+  --font-display: "Science Gothic", "Archivo Black", system-ui, sans-serif;
+  --font-head: "Science Gothic", "Space Grotesk", system-ui, sans-serif;
 }
 
 /* light header with ink rule (not the brutalist black bar) */
@@ -77,6 +84,14 @@
 [data-skin="riso"] .faq-h {
   color: var(--accent);
   text-shadow: none;
+}
+
+/* riso & te give cards a dark surface (--surface), so on-card text must ride on
+   --ink — the bright brutalist cards leave it at the browser default (near-black),
+   which vanishes on a dark card. --ink adapts, so this fixes light and dark both. */
+[data-skin="riso"] .tool-card,
+[data-skin="te"] .tool-card {
+  color: var(--ink);
 }
 
 /* tool cards: circular index badge + alternating accents, flat paper bg */

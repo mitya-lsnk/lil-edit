@@ -34,20 +34,17 @@
   text-transform: uppercase;
   opacity: 0.8;
 }
-.app-header .back {
-  font-family: var(--font-head);
-  font-weight: 700;
-  font-size: 14px;
-  color: #fff;
-  letter-spacing: 1px;
-  text-transform: uppercase;
+/* Logo doubles as the home button — bare, inherits the .logo type styling. */
+.app-header .logo-btn {
   background: none;
   border: none;
+  padding: 0;
   cursor: pointer;
-  padding: 4px 0;
+  display: inline-flex;
+  align-items: center;
 }
-.app-header .back:hover {
-  color: var(--yellow);
+.app-header .logo-btn:hover .logo {
+  opacity: 0.82;
 }
 .head-left {
   display: inline-flex;
@@ -362,6 +359,22 @@
   box-shadow: var(--shadow);
   margin-bottom: 22px;
 }
+/* Compress: format on top, quality slider stacked under it, run on the right. */
+.compress-controls {
+  align-items: center;
+  justify-content: space-between;
+}
+.cc-left {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start; /* keep the format seg at content width, not stretched */
+  gap: 16px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.cc-run {
+  flex: none;
+}
 .t-field {
   display: flex;
   flex-direction: column;
@@ -377,22 +390,27 @@
 }
 .t-select {
   font-family: var(--font-head);
-  font-weight: 600;
-  font-size: 14px;
+  font-weight: 700;
+  font-size: 13px;
   color: var(--ink);
   background: var(--white);
   border: var(--bd);
-  padding: 9px 12px;
+  /* match the segmented-control button box so neighbours line up */
+  padding: 9px 15px;
   cursor: pointer;
 }
 .t-num {
   font-family: var(--font-mono);
   font-weight: 700;
-  width: 92px;
+  width: 88px;
   background: var(--white);
   border: var(--bd);
   padding: 8px 10px;
   color: var(--ink);
+  text-align: center;
+}
+.t-num:disabled {
+  opacity: 0.45;
 }
 .t-range {
   width: 240px;
@@ -408,10 +426,13 @@
   font-size: 13px;
   color: var(--ink);
 }
-.t-check input {
+/* Only the checkbox itself — not a number input that happens to share the
+   label (that one keeps its own .t-num width). */
+.t-check input[type="checkbox"] {
   width: 18px;
   height: 18px;
   accent-color: var(--ink);
+  flex: none;
 }
 
 /* segmented control */
@@ -520,6 +541,99 @@
   gap: 16px;
   margin-top: 20px;
   flex-wrap: wrap;
+}
+/* "Continue with" — hand the result straight into another tool */
+.t-pipe {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding-left: 16px;
+  margin-left: 2px;
+  border-left: var(--bd);
+}
+.t-pipe-lbl {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* -------- Post-save toast -------- */
+.toast {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  max-width: min(520px, calc(100vw - 48px));
+  padding: 14px 16px;
+  background: var(--surface);
+  border: var(--bd);
+  box-shadow: var(--shadow);
+  animation: toast-in 0.2s var(--ease) both;
+}
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+.toast-body {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.toast-check {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  color: var(--accent-ink);
+  background: var(--ok, #2fa85a);
+  border-radius: var(--radius-sm);
+}
+.toast-text {
+  min-width: 0;
+}
+.toast-title {
+  font-family: var(--font-display);
+  font-size: 14px;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.toast-name {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.toast-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex: none;
+}
+.toast-x {
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 2px;
+}
+.toast-x:hover {
+  color: var(--ink);
 }
 .t-good {
   color: #0a7d34;
@@ -675,6 +789,7 @@
   text-transform: uppercase;
   padding: 5px 10px;
   background: var(--yellow);
+  color: var(--accent-ink); /* dark ink on the yellow chip — was inheriting light */
   border: var(--bd);
   z-index: 3;
   pointer-events: none;
@@ -921,7 +1036,10 @@
 .m-desc {
   font-family: var(--font-head);
   font-size: 13px;
-  color: #333;
+  /* var(--ink) at reduced strength reads in both modes; the old #333 was
+     invisible on dark surfaces. */
+  color: var(--ink);
+  opacity: 0.8;
   margin-top: 8px;
   line-height: 1.4;
 }
@@ -1044,8 +1162,10 @@
   border-bottom: none;
 }
 .faq-row.faq-head {
-  background: var(--ink);
-  color: var(--yellow);
+  /* --screen is dark in every skin/mode, so the accent text stays legible —
+     unlike var(--ink), which flips light in dark mode and killed the contrast. */
+  background: var(--screen);
+  color: var(--accent);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -1105,9 +1225,9 @@
   align-items: center;
 }
 .skin-chip {
-  width: 26px;
-  height: 26px;
-  padding: 3px;
+  width: 30px;
+  height: 30px;
+  padding: 4px;
   border: 2px solid var(--muted);
   border-radius: var(--radius-sm);
   background: transparent;
@@ -1164,6 +1284,33 @@
     color var(--dur) var(--ease);
 }
 .mode-toggle:hover {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+/* RU/EN language toggle — same pill as the light/dark switch, wide enough
+   for a two-letter code */
+.lang-toggle {
+  height: 30px;
+  padding: 0 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display, inherit);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  color: var(--accent);
+  background: transparent;
+  border: 2px solid var(--accent);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition:
+    background var(--dur) var(--ease),
+    color var(--dur) var(--ease);
+}
+.lang-toggle:hover {
   background: var(--accent);
   color: var(--accent-ink);
 }

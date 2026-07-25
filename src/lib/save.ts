@@ -3,7 +3,7 @@ import { writeFileBytes } from "./fsx";
 import { hasTauri } from "./tauri";
 
 /** Join with whichever separator the directory already uses. */
-function joinPath(dir: string, name: string): string {
+export function joinPath(dir: string, name: string): string {
   const sep = dir.includes("\\") && !dir.includes("/") ? "\\" : "/";
   return dir.endsWith(sep) ? dir + name : dir + sep + name;
 }

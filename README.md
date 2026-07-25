@@ -1,154 +1,172 @@
-# im·mage
+# lil image
 
-Кроссплатформенное десктоп-приложение для работы с изображениями: **сжатие**, **удаление фона** и **апскейл**. Всё считается локально, офлайн.
+**English** · [Русский](README.ru.md)
 
-Референсы: [Squoosh](https://squoosh.app) (сжатие), [Upscayl](https://github.com/upscayl/upscayl) (апскейл), нативный ремувер фона macOS.
+A cross-platform desktop app for working with images: **compression**, **background
+removal**, and **upscaling**. Everything runs locally, offline — nothing is sent to
+the network.
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+![Tauri](https://img.shields.io/badge/built%20with-Tauri%202-24C8DB)
+![Platforms](https://img.shields.io/badge/platforms-macOS%20·%20Windows%20·%20Linux-555)
 
 ---
 
-## Что уже работает
+## What works
 
-| Функция | Статус | Движок |
+| Feature | Status | Engine |
 |---|---|---|
-| **Сжатие** | ✅ готово, проверено | jSquash (WASM): MozJPEG, WebP, AVIF, OxiPNG |
-| **Менеджер моделей** | ✅ готово | Скачивание с прогрессом + распаковка, в Rust |
-| **Удаление фона** | ✅ реализовано | ONNX (BiRefNet / U²-Net / IS-Net / Silueta) через `ort` |
-| **Апскейл** | ✅ реализовано | три ncnn-vulkan движка на выбор: Upscayl, Real-ESRGAN, waifu2x |
+| **Compression** | ✅ done, tested | jSquash (WASM): MozJPEG, WebP, AVIF, OxiPNG |
+| **Model manager** | ✅ done | Download with progress + unpack, in Rust |
+| **Background removal** | ✅ implemented | ONNX (BiRefNet / U²-Net / IS-Net / Silueta) via `ort` |
+| **Upscaling** | ✅ implemented | Three ncnn-vulkan engines: Upscayl, Real-ESRGAN, waifu2x |
+| **Interface language** | ✅ done | Russian / English, switchable in-app |
+| **Theming** | ✅ done | Three skins × light/dark |
 
-> Сжатие протестировано end-to-end в реальном фронтенде (3.3 МБ → 20–48 КБ на всех
-> четырёх кодеках). Удаление фона проверено интеграционным тестом на настоящих весах
-> u2netp. Апскейл и полный UI-путь фона стоит прогнать вручную (см. ниже) — они требуют
-> скачивания моделей на 4–170 МБ.
-
----
-
-## Стек
-
-- **Tauri 2** — каркас (Rust-бэкенд + системный WebView). Лёгкий, ~10 МБ рантайма.
-- **React + TypeScript + Vite** — фронтенд.
-- **jSquash** — WASM-кодеки сжатия (те же, что в Squoosh).
-- **ort** (onnxruntime) — ONNX-рантайм для удаления фона.
-- **ncnn-vulkan движки** — GPU-апскейл через Vulkan, скачиваются менеджером моделей.
+> Compression is tested end-to-end in the real frontend (3.3 MB → 20–48 KB across all
+> four codecs). Background removal is covered by an integration test against real u2netp
+> weights. Upscaling and the full background UI path are best run manually (see below) —
+> they require downloading 4–170 MB models.
 
 ---
 
-## Запуск
+## Interface language
 
-Нужны Node ≥ 20 и Rust (уже установлены на этой машине).
+The UI ships in **Russian and English**. On first launch it follows your OS locale
+(a Russian system → Russian, otherwise English); after that, the **RU/EN toggle** in
+the header wins and the choice is remembered. All user-facing text lives in
+[`src/lib/strings.tsx`](src/lib/strings.tsx) — add a key to the `ru` object and the
+compiler will require the matching `en` value.
+
+---
+
+## Tech stack
+
+- **Tauri 2** — shell (Rust backend + system WebView). Light, ~10 MB runtime.
+- **React + TypeScript + Vite** — frontend.
+- **jSquash** — WASM compression codecs (the same ones Squoosh uses).
+- **ort** (onnxruntime) — ONNX runtime for background removal.
+- **ncnn-vulkan engines** — GPU upscaling through Vulkan, fetched by the model manager.
+
+---
+
+## Getting started
+
+Requires Node ≥ 20 and Rust.
 
 ```bash
-cd "/Users/lsnk/Current project/im-mage"
-npm install          # если ещё не ставили
-npm run tauri dev    # запустить приложение в дев-режиме
+npm install          # first time only
+npm run tauri dev    # run the app in dev mode
 ```
 
-Сборка релизного `.app` / `.dmg`:
+Build a release `.app` / `.dmg` / `.exe`:
 
 ```bash
 npm run tauri build
 ```
 
----
-
-## Как проверить вручную (утренний чек-лист)
-
-1. **Сжатие** (работает без скачиваний):
-   - Перетащите `sample.png` (лежит в корне) или любое фото в окно.
-   - Вкладка «Сжатие» → выберите формат, подвигайте качество → «Сжать».
-   - Сравните размеры до/после, нажмите «Сохранить…».
-
-2. **Удаление фона**:
-   - Вкладка «Удалить фон». Если моделей нет — покажется список для скачивания.
-   - Скачайте **U²-Net (lite)** (4.4 МБ, быстрая проба) или **IS-Net (general)** (лучше для портретов).
-   - Выберите модель → «Удалить фон». Результат — PNG с прозрачностью.
-   - Для осмысленного результата берите фото с чётким объектом, а не градиент.
-
-3. **Апскейл**:
-   - Вкладка «Апскейл» → скачайте один из движков (Upscayl ~115 МБ, Real-ESRGAN ~49 МБ,
-     waifu2x ~35 МБ). Поставите несколько — в панели появится переключатель движков.
-   - Выберите модель и масштаб → «Увеличить». У waifu2x есть ещё ручка шумодава.
-   - ⚠️ Возможный нюанс macOS: если Gatekeeper заблокирует скачанный бинарник,
-     приложение уже пытается снять карантин (`xattr`), но при ошибке разрешите
-     запуск в Системных настройках → Конфиденциальность и безопасность.
+> Running `npm run dev` opens the frontend in a plain browser. Compression works there,
+> but background removal and upscaling need the Rust backend, and the "save next to the
+> original" default needs the native file path — both only exist in the Tauri app.
 
 ---
 
-## Модели (ссылки в реестре)
+## Manual test checklist
 
-Реестр задаётся в [`src-tauri/src/models.rs`](src-tauri/src/models.rs). Все ссылки прямые
-и проверены 2026-07-19.
-
-**Фон (ONNX):**
-- U²-Net lite — `u2netp.onnx` (4.4 МБ) — https://github.com/danielgatis/rembg
-- U²-Net full — `u2net.onnx` (168 МБ)
-- IS-Net general — `isnet-general-use.onnx` (170 МБ)
-- Silueta — `silueta.onnx` (42 МБ)
-
-**Апскейл (ncnn, архив под каждую ОС выбирается на этапе компиляции):**
-- Upscayl — бинарник (сборка 2025-12) + 5 моделей — ~115 МБ — https://github.com/upscayl/upscayl-ncnn
-- Real-ESRGAN ncnn-vulkan — 45–49 МБ — https://github.com/xinntao/Real-ESRGAN
-- waifu2x-ncnn-vulkan (сборка 2025-09) — 35–42 МБ — https://github.com/nihui/waifu2x-ncnn-vulkan
-
-По умолчанию модели кладутся в `<app_data_dir>/models`
-(macOS: `~/Library/Application Support/com.lil.image/models`).
-Папку можно переназначить: **Настройки → Хранилище моделей → Выбрать папку…**,
-галочка «переносить уже скачанное» перевозит туда всё, что уже скачано
-(через copy+delete, так что смена диска работает).
-
-Добавить модель — допишите запись в `REGISTRY` в `models.rs` (id, url, размер, категория).
+1. **Compression** (no downloads needed): drop an image, pick a format, adjust quality,
+   Compress, compare before/after, Save.
+2. **Background removal**: download **U²-Net (lite)** (4.4 MB, quick) or **IS-Net (general)**
+   (better for portraits), pick it, Remove background. Result is a transparent PNG.
+3. **Upscaling**: download an engine (Upscayl ~115 MB, Real-ESRGAN ~49 MB, waifu2x ~35 MB).
+   Install more than one and an engine switcher appears. Pick a model and scale, Upscale.
+   waifu2x also has a denoise dial.
+   - macOS note: if Gatekeeper blocks a downloaded binary, the app already tries to strip
+     the quarantine flag (`xattr`); if that fails, allow it in System Settings → Privacy
+     & Security.
 
 ---
 
-## Структура
+## Models (registry)
+
+The registry lives in [`src-tauri/src/models.rs`](src-tauri/src/models.rs). Links are
+direct and were verified 2026-07-19.
+
+**Background removal (ONNX):**
+- U²-Net lite — `u2netp.onnx` (4.4 MB) — https://github.com/danielgatis/rembg
+- U²-Net full — `u2net.onnx` (168 MB)
+- IS-Net general — `isnet-general-use.onnx` (170 MB)
+- Silueta — `silueta.onnx` (42 MB)
+
+**Upscaling (ncnn, per-OS archive chosen at compile time):**
+- Upscayl — binary (Dec 2025 build) + 5 models — ~115 MB — https://github.com/upscayl/upscayl-ncnn
+- Real-ESRGAN ncnn-vulkan — 45–49 MB — https://github.com/xinntao/Real-ESRGAN
+- waifu2x-ncnn-vulkan (Sep 2025 build) — 35–42 MB — https://github.com/nihui/waifu2x-ncnn-vulkan
+
+By default models go to `<app_data_dir>/models` (macOS:
+`~/Library/Application Support/com.lil.image/models`). The folder is configurable:
+**Settings → Model storage → Choose folder…**; the "move what's already downloaded"
+checkbox relocates existing files (via copy+delete, so switching drives works).
+
+To add a model, append an entry to `REGISTRY` in `models.rs` (id, url, size, category).
+
+---
+
+## Project structure
 
 ```
-im-mage/
-├── src/                      # фронтенд (React)
-│   ├── App.tsx               # оболочка, вкладки
+lil-image/
+├── src/                      # frontend (React)
+│   ├── App.tsx               # shell, tabs
 │   ├── lib/
-│   │   ├── compress.ts       # пайплайн сжатия на jSquash
-│   │   ├── models.ts         # мост к командам менеджера моделей
-│   │   ├── ai.ts             # мост к remove_background / upscale_image
-│   │   ├── save.ts           # нативный диалог сохранения (по умолчанию — папка оригинала)
-│   │   ├── intake.ts         # приём файла: нативный drag-drop/диалог, отдаёт путь
-│   │   └── fsx.ts            # чтение/запись файлов в обход scope fs-плагина
+│   │   ├── compress.ts       # jSquash compression pipeline
+│   │   ├── models.ts         # bridge to the model-manager commands
+│   │   ├── ai.ts             # bridge to remove_background / upscale_image
+│   │   ├── save.ts           # native save dialog (defaults to the original's folder)
+│   │   ├── intake.ts         # file intake: native drag-drop/dialog, yields the path
+│   │   ├── fsx.ts            # file read/write bypassing the fs-plugin scope
+│   │   ├── i18n.tsx          # language context (RU/EN), follows OS, persists
+│   │   └── strings.tsx       # all UI text, both languages
 │   └── components/
 │       ├── DropZone.tsx
 │       ├── CompressPanel.tsx
 │       ├── BackgroundPanel.tsx
 │       ├── UpscalePanel.tsx
-│       └── ModelManager.tsx
+│       ├── ModelManager.tsx
+│       └── LanguagePicker.tsx
 ├── src-tauri/
 │   ├── src/
-│   │   ├── lib.rs            # регистрация плагинов и команд
-│   │   ├── models.rs         # реестр + скачивание/распаковка
-│   │   ├── bg.rs             # удаление фона (ort/ONNX) + тест
-│   │   ├── ai.rs             # апскейл: диспетчер трёх ncnn-движков
-│   │   ├── settings.rs       # settings.json (переопределение папки моделей)
+│   │   ├── lib.rs            # plugin + command registration
+│   │   ├── models.rs         # registry + download/unpack
+│   │   ├── bg.rs             # background removal (ort/ONNX) + test
+│   │   ├── ai.rs             # upscaling: three-engine ncnn dispatcher
+│   │   ├── settings.rs       # settings.json (models-folder override)
 │   │   └── fsx.rs            # read_file_bytes / write_file_bytes
 │   └── tauri.conf.json
-└── sample.png                # тестовый градиент
+└── sample.png                # test gradient
 ```
 
 ---
 
-## Известные ограничения / что дальше
+## Roadmap / known limits
 
-- **Передача байтов по IPC** для фона/апскейла идёт как массив чисел — для очень
-  больших изображений это неэффективно. Позже: писать через временный файл или raw-IPC.
-- **Сжатие на главном потоке** — для больших AVIF UI может подтормаживать. Позже:
-  вынести в Web Worker (jSquash это поддерживает).
-- **Путь оригинала известен только в приложении.** В браузере (`npm run dev`) File API
-  пути не отдаёт, поэтому «сохранить рядом с оригиналом» работает только в сборке —
-  там приём файла идёт через нативный drag-drop Tauri (`dragDropEnabled: true`).
-- Батч-обработка, слайдер «до/после», пресеты экспорта — не сделаны, следующий заход.
+- **IPC byte transfer** for background/upscale still goes as a number array — inefficient
+  for very large images. Later: temp file or raw IPC.
+- **Compression on the main thread** — large AVIF can stutter the UI. Later: Web Worker.
+- Batch processing, export presets — not done yet.
 
-## Интеграционный тест удаления фона
+---
 
-```bash
-cd src-tauri
-cargo test --release u2netp_produces_alpha_mask -- --ignored --nocapture
-```
+## Contributing
 
-Скачивает u2netp один раз во временную папку и прогоняет инференс на `sample.png`,
-проверяя, что альфа-маска не пустая.
+Contributions are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## Third-party licenses
+
+lil image's own code is MIT (see [LICENSE](LICENSE)). The upscale engines and ONNX
+models are **downloaded at runtime** and each carries its own license (Tauri, jSquash,
+ort, Upscayl-ncnn, Real-ESRGAN, waifu2x, and the model weights) — follow the source
+links in the registry above for the exact terms.
+
+## License
+
+[MIT](LICENSE) © 2026 mitya-lsnk

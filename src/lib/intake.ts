@@ -63,13 +63,17 @@ async function loadPath(path: string): Promise<Picked> {
   return { file: new File([bytes as BlobPart], name, { type }), path };
 }
 
-/** Open the picker. Uses the native dialog in the app so we learn the path. */
-export async function pickImage(): Promise<Picked | null> {
+/**
+ * Open the picker. Uses the native dialog in the app so we learn the path.
+ * `filterName` is the localized label for the image filter (this module runs
+ * outside React, so the caller passes the translated string in).
+ */
+export async function pickImage(filterName = "Images"): Promise<Picked | null> {
   if (!hasTauri()) return null;
   const path = await open({
     multiple: false,
     directory: false,
-    filters: [{ name: "Изображения", extensions: IMAGE_EXTS }],
+    filters: [{ name: filterName, extensions: IMAGE_EXTS }],
   });
   if (typeof path !== "string") return null;
   return loadPath(path);

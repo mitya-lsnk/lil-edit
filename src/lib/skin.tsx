@@ -11,31 +11,16 @@ export type Mode = "light" | "dark";
 
 export interface SkinMeta {
   id: Skin;
-  name: string;
-  tagline: string;
   /** two swatch colors for the picker chip */
   swatch: [string, string];
 }
 
+// Names and taglines are localized — see the `skins` block in strings.tsx,
+// keyed by id. Here we only keep what doesn't translate: the id and swatches.
 export const SKINS: SkinMeta[] = [
-  {
-    id: "brutal",
-    name: "Нео-брутализм",
-    tagline: "жёсткие рамки, тени, жёлтый",
-    swatch: ["#ffde00", "#111111"],
-  },
-  {
-    id: "riso",
-    name: "Рисо-поп",
-    tagline: "японский ризограф, полутон",
-    swatch: ["#ea3a0c", "#2233c4"],
-  },
-  {
-    id: "te",
-    name: "TE Hardware",
-    tagline: "приборная панель, скругления",
-    swatch: ["#fa4b00", "#15150f"],
-  },
+  { id: "brutal", swatch: ["#ffde00", "#111111"] },
+  { id: "riso", swatch: ["#ea3a0c", "#2233c4"] },
+  { id: "te", swatch: ["#fa4b00", "#15150f"] },
 ];
 
 const STORAGE_KEY = "lilimage.skin";

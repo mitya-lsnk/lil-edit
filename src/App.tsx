@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import "./screens.css";
 import "./skins.css";
 import "./dark.css";
@@ -10,28 +10,31 @@ import { FaqScreen } from "./components/FaqScreen";
 import { SettingsScreen } from "./components/SettingsScreen";
 import { SkinPicker } from "./components/SkinPicker";
 import { ModeToggle } from "./components/ModeToggle";
-import { onImageDrop, splitPath, type Picked } from "./lib/intake";
+import { LanguagePicker } from "./components/LanguagePicker";
+import { FileStrip } from "./components/FileStrip";
+import { Toast } from "./components/Toast";
+import { onImageDrop, pickImage, splitPath, type Picked } from "./lib/intake";
+import { joinPath } from "./lib/save";
+import { hasTauri } from "./lib/tauri";
+import { useStrings } from "./lib/i18n";
 
 type Screen = "home" | "faq" | "settings" | Tool;
-
-const TOOL_META: Record<Tool, { title: string; step: string; short: string }> = {
-  compress: { title: "COMPRESS", step: "01 / 03", short: "Сжатие" },
-  upscale: { title: "UPSCALE", step: "02 / 03", short: "Апскейл" },
-  background: { title: "REMOVE BG", step: "03 / 03", short: "Фон" },
-};
 
 const TOOL_ORDER: Tool[] = ["compress", "upscale", "background"];
 
 function App() {
+  const s = useStrings();
   const [picked, setPicked] = useState<Picked | null>(null);
   const [dropError, setDropError] = useState<string | null>(null);
+  const [savedPath, setSavedPath] = useState<string | null>(null);
   const [screen, setScreen] = useState<Screen>("home");
-  // Where "back" from Models/Settings should land (the screen you opened them from).
-  const [returnTo, setReturnTo] = useState<Screen>("home");
 
   const file = picked?.file ?? null;
   // Folder of the original — the Save dialogs open there.
   const srcDir = picked?.path ? splitPath(picked.path).dir : null;
+
+  // Browser fallback for Replace (no native dialog outside the app).
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // The whole window is the drop target and it accepts the file silently — no
   // overlay.
@@ -44,55 +47,91 @@ function App() {
     [],
   );
 
+  // Swap the current image from inside a tool. Native picker in the app (so we
+  // learn the path), hidden file input in the browser.
+  async function replace() {
+    if (!hasTauri()) {
+      inputRef.current?.click();
+      return;
+    }
+    const p = await pickImage(s.intake.imagesFilter);
+    if (p) {
+      setDropError(null);
+      setPicked(p);
+    }
+  }
+
+  function onInputFiles(files: FileList | null) {
+    const img = Array.from(files ?? []).find((f) => f.type.startsWith("image/"));
+    if (img) {
+      setDropError(null);
+      setPicked({ file: img, path: null });
+    }
+  }
+
+  // Hand a tool's result to another tool as its next input, no save round-trip.
+  // The result has no real path, but it logically belongs in the original's
+  // folder — synthesize a path there so Save still defaults next to the source.
+  function sendTo(next: File, tool: Tool) {
+    const path = srcDir ? joinPath(srcDir, next.name) : null;
+    setDropError(null);
+    setPicked({ file: next, path });
+    setScreen(tool);
+  }
+
+  // Wipe the working image and every derived result — a clean slate for the
+  // next job. Offered from the post-save toast.
+  function clearWorkspace() {
+    setSavedPath(null);
+    setPicked(null);
+    setScreen("home");
+  }
+
   const isHome = screen === "home";
   const isFaq = screen === "faq";
   const isSettings = screen === "settings";
   const isAux = isHome || isFaq || isSettings;
-  const auxTitle = isFaq ? "МОДЕЛИ" : isSettings ? "НАСТРОЙКИ" : "";
+  const auxTitle = isFaq ? s.app.modelsTitle : isSettings ? s.app.settingsTitle : "";
 
-  // Models/Settings are reachable from anywhere; remember where we came from so
-  // "back" returns there instead of always dumping the user on the home screen.
-  function openAux(target: "faq" | "settings") {
-    if (!isFaq && !isSettings) setReturnTo(screen);
-    setScreen(target);
-  }
-  const goBack = () => setScreen(isAux ? returnTo : "home");
+  // Models/Settings are reachable from anywhere. The header button toggles: on
+  // the screen already → back home, otherwise open it (so it doubles as its own
+  // "back" when you can't spot the logo). The logo also always goes home.
+  const toggleAux = (target: "faq" | "settings") =>
+    setScreen((cur) => (cur === target ? "home" : target));
 
   return (
     <div className="app-shell">
       <header className="app-header">
         <div className="head-left">
-          {isHome ? (
-            <>
-              <span className="logo">LIL IMAGE</span>
-              <span className="logo-sub">Image Toolkit</span>
-            </>
-          ) : (
-            <>
-              <button className="back" onClick={goBack}>
-                ← {isAux ? "Назад" : "Меню"}
-              </button>
-              {isAux ? (
-                <span className="title-mid">{auxTitle}</span>
-              ) : (
-                /* Jump straight between tools without a round-trip to the menu —
-                   the loaded file carries over. */
-                <div className="tool-switch" role="tablist">
-                  {TOOL_ORDER.map((t) => (
-                    <button
-                      key={t}
-                      role="tab"
-                      aria-selected={screen === t}
-                      className={screen === t ? "active" : ""}
-                      disabled={!file}
-                      onClick={() => setScreen(t)}
-                    >
-                      {TOOL_META[t].short}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </>
+          {/* The logo is the way home — no separate back/menu button. */}
+          <button
+            className="logo-btn"
+            onClick={() => setScreen("home")}
+            aria-label="lil image — home"
+          >
+            <span className="logo">LIL IMAGE</span>
+          </button>
+          {isHome && <span className="logo-sub">Image Toolkit</span>}
+          {(isFaq || isSettings) && (
+            <span className="title-mid">{auxTitle}</span>
+          )}
+          {!isAux && (
+            /* Jump straight between tools without a round-trip home —
+               the loaded file carries over. */
+            <div className="tool-switch" role="tablist">
+              {TOOL_ORDER.map((t) => (
+                <button
+                  key={t}
+                  role="tab"
+                  aria-selected={screen === t}
+                  className={screen === t ? "active" : ""}
+                  disabled={!file}
+                  onClick={() => setScreen(t)}
+                >
+                  {s.tools[t]}
+                </button>
+              ))}
+            </div>
           )}
         </div>
 
@@ -100,20 +139,23 @@ function App() {
 
         {/* Persistent right cluster — available on every screen. */}
         <div className="head-right">
+          <LanguagePicker />
           <SkinPicker />
           <ModeToggle />
           <button
             className={`help ${isFaq ? "active" : ""}`}
-            onClick={() => openAux("faq")}
+            aria-pressed={isFaq}
+            onClick={() => toggleAux("faq")}
           >
-            ? Модели
+            ? {s.app.helpModels}
           </button>
           <button
             className={`help ${isSettings ? "active" : ""}`}
-            onClick={() => openAux("settings")}
-            aria-label="Настройки"
+            aria-pressed={isSettings}
+            onClick={() => toggleAux("settings")}
+            aria-label={s.app.settingsAria}
           >
-            ⚙ Настройки
+            ⚙ {s.app.helpSettings}
           </button>
         </div>
       </header>
@@ -134,22 +176,55 @@ function App() {
           </>
         ) : file ? (
           <>
+            <input
+              ref={inputRef}
+              type="file"
+              accept="image/*"
+              hidden
+              onChange={(e) => onInputFiles(e.target.files)}
+            />
+            <FileStrip file={file} onReplace={replace} />
             {screen === "compress" && (
-              <CompressPanel file={file} srcDir={srcDir} />
+              <CompressPanel
+                file={file}
+                srcDir={srcDir}
+                onSendTo={sendTo}
+                onSaved={setSavedPath}
+              />
             )}
-            {screen === "upscale" && <UpscalePanel file={file} srcDir={srcDir} />}
+            {screen === "upscale" && (
+              <UpscalePanel
+                file={file}
+                srcDir={srcDir}
+                onSendTo={sendTo}
+                onSaved={setSavedPath}
+              />
+            )}
             {screen === "background" && (
-              <BackgroundPanel file={file} srcDir={srcDir} />
+              <BackgroundPanel
+                file={file}
+                srcDir={srcDir}
+                onSendTo={sendTo}
+                onSaved={setSavedPath}
+              />
             )}
           </>
         ) : (
           <div className="home-drop" style={{ marginBottom: 0 }}>
             <div className="plus" />
-            <div className="dz-title">Перетащите изображение сюда</div>
-            <div className="dz-sub">бросьте файл в любое место окна</div>
+            <div className="dz-title">{s.app.dropTitle}</div>
+            <div className="dz-sub">{s.app.dropSub}</div>
           </div>
         )}
       </main>
+
+      {savedPath && (
+        <Toast
+          path={savedPath}
+          onClear={clearWorkspace}
+          onClose={() => setSavedPath(null)}
+        />
+      )}
     </div>
   );
 }

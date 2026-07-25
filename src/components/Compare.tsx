@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { useStrings } from "../lib/i18n";
 
 interface Props {
   beforeUrl: string;
@@ -25,18 +26,32 @@ const MATTE_BG: Record<Exclude<Matte, "checker">, string> = {
  */
 type Mode = "hold" | "split" | "side";
 
+/** Everything needed to paint one frame of the magnifier, straight to the DOM. */
+interface LoupePaint {
+  x: number;
+  y: number;
+  pos: string;
+  size: string;
+  src: string;
+  matteColor: string | null;
+  checker: boolean;
+}
+
 const LENS = 150; // px diameter
 const ZOOM = 3;
 
 export function Compare({
   beforeUrl,
   afterUrl,
-  beforeLabel = "ДО",
-  afterLabel = "ПОСЛЕ",
+  beforeLabel,
+  afterLabel,
   beforeMeta,
   afterMeta,
   transparent,
 }: Props) {
+  const s = useStrings();
+  beforeLabel ??= s.compare.before;
+  afterLabel ??= s.compare.after;
   const [mode, setMode] = useState<Mode>("hold");
   const [pct, setPct] = useState(50);
   const [full, setFull] = useState(false);
@@ -46,22 +61,116 @@ export function Compare({
   // The loupe follows the cursor by default; the toggle is just an escape hatch.
   const [loupe, setLoupe] = useState(true);
   const [holding, setHolding] = useState(false);
-  const [lens, setLens] = useState<{
-    show: boolean;
-    x: number;
-    y: number;
-    bg: string;
-    size: string;
-    src: string;
-  }>({ show: false, x: 0, y: 0, bg: "0 0", size: "", src: "" });
 
   const splitRef = useRef<HTMLDivElement>(null);
   const afterImgRef = useRef<HTMLImageElement>(null);
   const beforeImgRef = useRef<HTMLImageElement>(null);
   const holdImgRef = useRef<HTMLImageElement>(null);
-  // Last cursor position over a stage, so we can recompute the lens when the
-  // image swaps (hold mode) without waiting for the next mousemove.
+
+  // --- Loupe: driven straight to the DOM, never through React state. Writing
+  // setState on every mousemove re-rendered the whole component and lagged; here
+  // the magnifier is one persistent node whose style we patch inside a single
+  // rAF per frame. ---
+  const loupeRef = useRef<HTMLDivElement>(null);
+  const rafRef = useRef<number | null>(null);
+  const paintRef = useRef<LoupePaint | null>(null);
+  // Last cursor position over a stage, so we can re-magnify when the image swaps
+  // under a still cursor (hold mode) without waiting for the next move.
   const lastPos = useRef<{ x: number; y: number } | null>(null);
+
+  function schedulePaint() {
+    if (rafRef.current != null) return;
+    rafRef.current = requestAnimationFrame(() => {
+      rafRef.current = null;
+      const el = loupeRef.current;
+      if (!el) return;
+      const n = paintRef.current;
+      if (!n) {
+        el.style.display = "none";
+        return;
+      }
+      el.style.display = "block";
+      el.style.left = `${n.x}px`;
+      el.style.top = `${n.y}px`;
+      el.style.backgroundImage = `url("${n.src}")`;
+      el.style.backgroundSize = n.size;
+      el.style.backgroundPosition = n.pos;
+      el.style.backgroundColor = n.matteColor ?? "";
+      el.classList.toggle("b-checker", n.checker);
+    });
+  }
+
+  // Object-fit: contain aware geometry. Returns null when the loupe should be
+  // hidden (off the image, or the toggle is off).
+  function computeLoupe(
+    clientX: number,
+    clientY: number,
+    img: HTMLImageElement | null,
+    src: string,
+  ): LoupePaint | null {
+    if (!loupe || !img) return null;
+    const box = img.getBoundingClientRect();
+    const natW = img.naturalWidth || box.width;
+    const natH = img.naturalHeight || box.height;
+    const ar = natW / natH;
+    let dw: number, dh: number;
+    if (box.width / box.height > ar) {
+      dh = box.height;
+      dw = box.height * ar;
+    } else {
+      dw = box.width;
+      dh = box.width / ar;
+    }
+    const offX = (box.width - dw) / 2;
+    const offY = (box.height - dh) / 2;
+    const cx = clientX - box.left - offX;
+    const cy = clientY - box.top - offY;
+    if (cx < 0 || cy < 0 || cx > dw || cy > dh) return null;
+    const isAfter = src === afterUrl;
+    return {
+      x: clientX,
+      y: clientY,
+      pos: `${-(cx * ZOOM - LENS / 2)}px ${-(cy * ZOOM - LENS / 2)}px`,
+      size: `${dw * ZOOM}px ${dh * ZOOM}px`,
+      src,
+      matteColor:
+        isAfter && transparent && matte !== "checker" ? MATTE_BG[matte] : null,
+      checker: !!(isAfter && transparent && matte === "checker"),
+    };
+  }
+
+  // Recompute + repaint the loupe, and swap the stage cursor: the OS pointer is
+  // hidden (cursor:none, via .loupe-on) only while the lens is actually up, and
+  // comes back the moment it hides — so controls under the image stay usable.
+  function moveLoupe(
+    stage: HTMLElement,
+    clientX: number,
+    clientY: number,
+    img: HTMLImageElement | null,
+    src: string,
+    cursorWhenHidden = "default",
+  ) {
+    lastPos.current = { x: clientX, y: clientY };
+    const n = computeLoupe(clientX, clientY, img, src);
+    paintRef.current = n;
+    stage.style.cursor = n ? "" : cursorWhenHidden;
+    schedulePaint();
+  }
+
+  function hideLoupe(stage?: HTMLElement) {
+    paintRef.current = null;
+    lastPos.current = null;
+    if (stage) stage.style.cursor = "default";
+    schedulePaint();
+  }
+
+  // Cancel any pending frame on unmount.
+  useEffect(
+    () => () => {
+      if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
+    },
+    [],
+  );
 
   // Safety net for hold mode: if the button comes up somewhere we don't get an
   // event for (outside the window, pointer capture lost), release anyway —
@@ -82,10 +191,16 @@ export function Compare({
   // When hold toggles, re-magnify the image that is *now* shown (before⇄after)
   // at the cursor's last position — otherwise the lens keeps the stale picture.
   useEffect(() => {
-    if (mode !== "hold" || !lens.show) return;
+    if (mode !== "hold") return;
     const p = lastPos.current;
     if (!p) return;
-    onLoupeMove(p.x, p.y, holdImgRef.current, holding ? beforeUrl : afterUrl);
+    paintRef.current = computeLoupe(
+      p.x,
+      p.y,
+      holdImgRef.current,
+      holding ? beforeUrl : afterUrl,
+    );
+    schedulePaint();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [holding]);
 
@@ -97,51 +212,6 @@ export function Compare({
     p = Math.max(0, Math.min(100, p));
     setPct(p);
   }
-
-  /**
-   * Magnifier. `img` is the element actually under the cursor and `src` the
-   * image it displays, so the lens shows whichever of the two the user is
-   * pointing at — the before side of the slider magnifies the before image.
-   * Geometry is object-fit: contain aware.
-   */
-  function onLoupeMove(
-    clientX: number,
-    clientY: number,
-    img: HTMLImageElement | null,
-    src: string,
-  ) {
-    if (!loupe || !img) return;
-    lastPos.current = { x: clientX, y: clientY };
-    const box = img.getBoundingClientRect();
-    const natW = img.naturalWidth || box.width;
-    const natH = img.naturalHeight || box.height;
-    const ar = natW / natH;
-    let dw: number, dh: number;
-    if (box.width / box.height > ar) {
-      dh = box.height;
-      dw = box.height * ar;
-    } else {
-      dw = box.width;
-      dh = box.width / ar;
-    }
-    const offX = (box.width - dw) / 2;
-    const offY = (box.height - dh) / 2;
-    const cx = clientX - box.left - offX;
-    const cy = clientY - box.top - offY;
-    if (cx < 0 || cy < 0 || cx > dw || cy > dh) {
-      setLens((l) => ({ ...l, show: false }));
-      return;
-    }
-    setLens({
-      show: true,
-      x: clientX,
-      y: clientY,
-      bg: `${-(cx * ZOOM - LENS / 2)}px ${-(cy * ZOOM - LENS / 2)}px`,
-      size: `${dw * ZOOM}px ${dh * ZOOM}px`,
-      src,
-    });
-  }
-  const hideLens = () => setLens((l) => ({ ...l, show: false }));
 
   /** In split mode the after layer is clipped to the right of the divider. */
   function splitSideAt(clientX: number): "before" | "after" {
@@ -162,9 +232,9 @@ export function Compare({
     transparent && matte !== "checker" ? { background: MATTE_BG[matte] } : undefined;
 
   const MODES: { id: Mode; label: string }[] = [
-    { id: "hold", label: "Результат" },
-    { id: "split", label: "Ползунок" },
-    { id: "side", label: "Рядом" },
+    { id: "hold", label: s.compare.modeHold },
+    { id: "split", label: s.compare.modeSplit },
+    { id: "side", label: s.compare.modeSide },
   ];
 
   return (
@@ -179,7 +249,7 @@ export function Compare({
                 onClick={() => {
                   setMode(m.id);
                   setHolding(false);
-                  hideLens();
+                  hideLoupe();
                 }}
               >
                 {m.label}
@@ -190,29 +260,29 @@ export function Compare({
             className={`cmp-tool ${loupe ? "active" : ""}`}
             onClick={() => {
               setLoupe((v) => !v);
-              hideLens();
+              hideLoupe();
             }}
-            title="Лупа включается сама при наведении на изображение"
+            title={s.compare.loupeTitle}
           >
-            🔍 Лупа
+            {s.compare.loupe}
           </button>
           {transparent && (
-            <div className="cmp-matte" role="group" aria-label="Подложка">
-              <span className="cmp-matte-lbl">Фон:</span>
+            <div className="cmp-matte" role="group" aria-label={s.compare.matteAria}>
+              <span className="cmp-matte-lbl">{s.compare.matteLabel}</span>
               <button
                 className={`m-chk ${matte === "checker" ? "active" : ""}`}
                 onClick={() => setMatte("checker")}
-                title="Шахматная (прозрачность)"
+                title={s.compare.matteChecker}
               />
               <button
                 className={`m-wht ${matte === "white" ? "active" : ""}`}
                 onClick={() => setMatte("white")}
-                title="Белая подложка"
+                title={s.compare.matteWhite}
               />
               <button
                 className={`m-blk ${matte === "black" ? "active" : ""}`}
                 onClick={() => setMatte("black")}
-                title="Чёрная подложка"
+                title={s.compare.matteBlack}
               />
             </div>
           )}
@@ -223,7 +293,7 @@ export function Compare({
           {afterMeta && <b>{afterMeta}</b>}
         </div>
         <button className="b-btn b-btn--yellow" onClick={() => setFull(true)}>
-          ⛶ Fullscreen
+          {s.compare.fullscreen}
         </button>
       </div>
 
@@ -242,16 +312,17 @@ export function Compare({
           onPointerUp={() => setHolding(false)}
           onPointerCancel={() => setHolding(false)}
           onMouseMove={(e) =>
-            onLoupeMove(
+            moveLoupe(
+              e.currentTarget,
               e.clientX,
               e.clientY,
               holdImgRef.current,
               holding ? beforeUrl : afterUrl,
             )
           }
-          onMouseLeave={() => {
+          onMouseLeave={(e) => {
             setHolding(false);
-            hideLens();
+            hideLoupe(e.currentTarget);
           }}
         >
           <img
@@ -263,7 +334,7 @@ export function Compare({
           <span className={`cmp-tag ${holding ? "before" : "after"}`}>
             {holding ? beforeLabel : afterLabel}
           </span>
-          {!holding && <span className="cmp-hint">зажмите, чтобы сравнить</span>}
+          {!holding && <span className="cmp-hint">{s.compare.holdHint}</span>}
         </div>
       )}
 
@@ -283,15 +354,30 @@ export function Compare({
             if (e.buttons === 1) moveTo(e.clientX);
           }}
           onMouseMove={(e) => {
+            // Near the divider the loupe just covers the handle you're trying to
+            // grab — hide it and show the resize cursor there instead.
+            const el = splitRef.current;
+            if (el) {
+              const r = el.getBoundingClientRect();
+              const dividerX = r.left + (pct / 100) * r.width;
+              if (Math.abs(e.clientX - dividerX) <= 24) {
+                paintRef.current = null;
+                e.currentTarget.style.cursor = "ew-resize";
+                schedulePaint();
+                return;
+              }
+            }
             const side = splitSideAt(e.clientX);
-            onLoupeMove(
+            moveLoupe(
+              e.currentTarget,
               e.clientX,
               e.clientY,
               side === "before" ? beforeImgRef.current : afterImgRef.current,
               side === "before" ? beforeUrl : afterUrl,
+              "ew-resize",
             );
           }}
-          onMouseLeave={hideLens}
+          onMouseLeave={(e) => hideLoupe(e.currentTarget)}
         >
           <div className="layer before">
             <img ref={beforeImgRef} src={beforeUrl} alt="before" {...noDrag} />
@@ -318,9 +404,15 @@ export function Compare({
             <div
               className={`cmp-img-wrap ${loupe ? "loupe-on" : ""}`}
               onMouseMove={(e) =>
-                onLoupeMove(e.clientX, e.clientY, beforeImgRef.current, beforeUrl)
+                moveLoupe(
+                  e.currentTarget,
+                  e.clientX,
+                  e.clientY,
+                  beforeImgRef.current,
+                  beforeUrl,
+                )
               }
-              onMouseLeave={hideLens}
+              onMouseLeave={(e) => hideLoupe(e.currentTarget)}
             >
               <img ref={beforeImgRef} src={beforeUrl} alt="before" {...noDrag} />
             </div>
@@ -334,9 +426,15 @@ export function Compare({
               className={`cmp-img-wrap ${loupe ? "loupe-on" : ""} ${matteClass}`}
               style={matteStyle}
               onMouseMove={(e) =>
-                onLoupeMove(e.clientX, e.clientY, afterImgRef.current, afterUrl)
+                moveLoupe(
+                  e.currentTarget,
+                  e.clientX,
+                  e.clientY,
+                  afterImgRef.current,
+                  afterUrl,
+                )
               }
-              onMouseLeave={hideLens}
+              onMouseLeave={(e) => hideLoupe(e.currentTarget)}
             >
               <img ref={afterImgRef} src={afterUrl} alt="after" {...noDrag} />
             </div>
@@ -348,28 +446,15 @@ export function Compare({
         </div>
       )}
 
-      {/* Portal to <body>: a fixed lens inside .cmp gets offset by WKWebView's
-          animation-induced containing block, so render it at the document root. */}
+      {/* One persistent lens node, patched imperatively in schedulePaint (never
+          re-rendered by React). Portaled to <body>: a fixed lens inside .cmp gets
+          offset by WKWebView's animation-induced containing block. */}
       {loupe &&
-        lens.show &&
         createPortal(
           <div
-            className={`loupe ${lens.src === afterUrl && matte === "checker" ? "b-checker" : ""}`}
-            style={{
-              left: lens.x,
-              top: lens.y,
-              width: LENS,
-              height: LENS,
-              backgroundImage: `url(${lens.src})`,
-              backgroundSize: lens.size,
-              backgroundPosition: lens.bg,
-              // Solid backdrop behind the magnified cut-out (not the `background`
-              // shorthand — that would wipe out backgroundImage above).
-              backgroundColor:
-                lens.src === afterUrl && transparent && matte !== "checker"
-                  ? MATTE_BG[matte]
-                  : undefined,
-            }}
+            ref={loupeRef}
+            className="loupe"
+            style={{ display: "none", width: LENS, height: LENS }}
           >
             <span className="loupe-cross" />
           </div>,
@@ -390,7 +475,7 @@ export function Compare({
               setFull(false);
             }}
           >
-            × Закрыть
+            {s.compare.close}
           </button>
         </div>
       )}

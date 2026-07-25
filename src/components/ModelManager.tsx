@@ -9,6 +9,7 @@ import {
   type ModelStatus,
 } from "../lib/models";
 import { formatBytes } from "../lib/format";
+import { useStrings } from "../lib/i18n";
 
 interface ProgressState {
   [id: string]: { downloaded: number; total: number; phase: string };
@@ -20,6 +21,7 @@ interface Props {
 }
 
 export function ModelManager({ filter, onChanged }: Props) {
+  const s = useStrings();
   const [models, setModels] = useState<ModelStatus[]>([]);
   const [progress, setProgress] = useState<ProgressState>({});
   const [dir, setDir] = useState("");
@@ -107,15 +109,15 @@ export function ModelManager({ filter, onChanged }: Props) {
                 <span className="m-name">{m.name}</span>
                 {m.tag && <span className="m-badge tag">{m.tag}</span>}
                 <span className="m-badge">{m.size}</span>
-                {m.downloaded && <span className="m-badge ok">УСТАНОВЛЕНО</span>}
+                {m.downloaded && <span className="m-badge ok">{s.models.installed}</span>}
               </div>
               <div className="m-actions">
                 <button className="b-link" onClick={() => openUrl(m.homepage)}>
-                  источник ↗
+                  {s.models.source}
                 </button>
                 {m.downloaded ? (
                   <button className="b-btn" onClick={() => handleDelete(m.id)}>
-                    Удалить
+                    {s.models.delete}
                   </button>
                 ) : (
                   <button
@@ -123,7 +125,7 @@ export function ModelManager({ filter, onChanged }: Props) {
                     disabled={downloading}
                     onClick={() => handleDownload(m.id)}
                   >
-                    {downloading ? "…" : "Скачать ↓"}
+                    {downloading ? "…" : s.models.download}
                   </button>
                 )}
               </div>
@@ -138,9 +140,9 @@ export function ModelManager({ filter, onChanged }: Props) {
                 />
                 <span className="m-progress-label">
                   {p.phase === "extract"
-                    ? "распаковка…"
+                    ? s.models.extract
                     : p.phase === "done"
-                      ? "готово"
+                      ? s.models.done
                       : `${formatBytes(p.downloaded)} / ${formatBytes(p.total)}`}
                 </span>
               </div>
@@ -150,7 +152,7 @@ export function ModelManager({ filter, onChanged }: Props) {
       })}
       {dir && (
         <div className="m-dir">
-          Модели: <span>{dir}</span>
+          {s.models.dir} <span>{dir}</span>
         </div>
       )}
     </div>

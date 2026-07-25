@@ -517,7 +517,7 @@ pub async fn download_model(app: AppHandle, id: String) -> Result<(), String> {
         .map_err(|e| format!("mkdir failed: {e}"))?;
 
     let client = reqwest::Client::builder()
-        .user_agent("im-mage/0.1")
+        .user_agent("lil-image/0.1")
         .build()
         .map_err(|e| e.to_string())?;
 

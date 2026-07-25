@@ -1,13 +1,15 @@
 import { useEffect, useState } from "react";
 import { modelsDirPath } from "../lib/models";
 import { hasTauri } from "../lib/tauri";
+import { useStrings } from "../lib/i18n";
 
 /**
- * Straight answers about what the app actually loads. Everything here is meant
- * to match the registry in src-tauri/src/models.rs — if a model is added there,
- * add it here too.
+ * Straight answers about what the app actually loads. The prose lives in
+ * strings.tsx (both languages); here we only lay it out. Model names and the
+ * numeric weight/input/memory cells are language-neutral, so they stay inline.
  */
 export function FaqScreen() {
+  const s = useStrings();
   const [dir, setDir] = useState<string>("");
   useEffect(() => {
     if (!hasTauri()) return;
@@ -16,134 +18,91 @@ export function FaqScreen() {
       .catch(() => setDir(""));
   }, []);
 
+  const bg = s.faq.bgRows;
+
   return (
     <div className="faq">
-      <h2 className="faq-h">Какие модели читает программа</h2>
-      <p className="faq-lead">
-        Программа не сканирует произвольные файлы: она работает со своим списком
-        моделей и скачивает их сама. Всё считается локально, без интернета —
-        сеть нужна только в момент загрузки модели.
-      </p>
+      <h2 className="faq-h">{s.faq.heading}</h2>
+      <p className="faq-lead">{s.faq.lead}</p>
 
       <section className="faq-sec">
-        <h3>Удаление фона — формат ONNX</h3>
+        <h3>{s.faq.bgTitle}</h3>
         <div className="faq-table">
           <div className="faq-row faq-head">
-            <span>Модель</span>
-            <span>Вес</span>
-            <span>Вход</span>
-            <span>Память</span>
+            <span>{s.faq.bgCols.model}</span>
+            <span>{s.faq.bgCols.weight}</span>
+            <span>{s.faq.bgCols.input}</span>
+            <span>{s.faq.bgCols.memory}</span>
           </div>
           <div className="faq-row">
             <span>
               <b>BiRefNet</b>
-              <em>лучшее качество, края волос и меха</em>
+              <em>{bg.birefnet}</em>
             </span>
-            <span>928 МБ</span>
+            <span>928 MB</span>
             <span>1024×1024</span>
-            <span className="warn">~8 ГБ</span>
+            <span className="warn">~8 GB</span>
           </div>
           <div className="faq-row">
             <span>
               <b>IS-Net (general)</b>
-              <em>резкие края, хорош для портретов</em>
+              <em>{bg.isnet}</em>
             </span>
-            <span>170 МБ</span>
+            <span>170 MB</span>
             <span>1024×1024</span>
-            <span>~1 ГБ</span>
+            <span>~1 GB</span>
           </div>
           <div className="faq-row">
             <span>
               <b>U²-Net (full)</b>
-              <em>универсальная, крепкий баланс</em>
+              <em>{bg.u2netFull}</em>
             </span>
-            <span>168 МБ</span>
+            <span>168 MB</span>
             <span>320×320</span>
-            <span>~0.5 ГБ</span>
+            <span>~0.5 GB</span>
           </div>
           <div className="faq-row">
             <span>
               <b>Silueta</b>
-              <em>U²-Net, ужатая до 42 МБ</em>
+              <em>{bg.silueta}</em>
             </span>
-            <span>42 МБ</span>
+            <span>42 MB</span>
             <span>320×320</span>
-            <span>~0.3 ГБ</span>
+            <span>~0.3 GB</span>
           </div>
           <div className="faq-row">
             <span>
               <b>U²-Net (lite)</b>
-              <em>самая быстрая, для проб</em>
+              <em>{bg.u2netLite}</em>
             </span>
-            <span>4.4 МБ</span>
+            <span>4.4 MB</span>
             <span>320×320</span>
-            <span>~0.2 ГБ</span>
+            <span>~0.2 GB</span>
           </div>
         </div>
-        <p className="faq-note">
-          <b>Почему BiRefNet столько ест.</b> У этого экспорта вход жёстко зашит
-          как 1024×1024, и уменьшить его нельзя — модель просто откажется
-          считать. Восемь гигабайт уходят не на сам файл, а на промежуточные
-          вычисления трансформера в этом разрешении. Если памяти мало — берите
-          IS-Net: качество близкое, а расход в разы меньше.
-        </p>
+        {s.faq.bgNote}
       </section>
 
       <section className="faq-sec">
-        <h3>Апскейл — три движка на выбор</h3>
-        <p>
-          Это не отдельные файлы моделей, а бандл: бинарник плюс веса. Считает на
-          видеокарте через Vulkan. Ставить все три не нужно — берите один.
-        </p>
-        <ul className="faq-list">
-          <li>
-            <b>Upscayl (ncnn)</b> — сборка декабря 2025, живой форк Real-ESRGAN.
-            Пять моделей: <b>Стандарт</b> (универсальная), <b>Remacri</b> и{" "}
-            <b>UltraSharp</b> (фото — вторая злее по резкости),{" "}
-            <b>Digital&nbsp;Art</b> (рисунки и рендеры), <b>Lite</b> (быстрая).
-            Начинать стоит отсюда.
-          </li>
-          <li>
-            <b>Real-ESRGAN (ncnn)</b> — оригинал 2022 года: General&nbsp;(x4plus),
-            Anime&nbsp;(x4plus-anime), Anime&nbsp;video&nbsp;(v3, отдельные веса
-            на ×2/×3/×4). Запасной вариант, если Upscayl не поладил с
-            видеокартой.
-          </li>
-          <li>
-            <b>waifu2x (ncnn)</b> — сборка сентября 2025. Работает иначе:
-            не «дорисовывает» детали, а чистит и увеличивает, с отдельной ручкой
-            шумодава (0…3). Лучший выбор для аниме, лайн-арта и сканов — там, где
-            Real-ESRGAN норовит превратить линии в пластик.
-          </li>
-        </ul>
+        <h3>{s.faq.upTitle}</h3>
+        <p>{s.faq.upIntro}</p>
+        {s.faq.upList}
       </section>
 
       <section className="faq-sec">
-        <h3>Где лежат модели</h3>
-        <p>
-          По умолчанию — в системной папке приложения, и это часто диск C:. Если
-          места там мало, откройте <b>Настройки → Хранилище моделей</b> и
-          выберите любую другую папку (хоть рядом с самой программой). Уже
-          скачанное можно перенести туда же, галочкой.
-        </p>
+        <h3>{s.faq.locTitle}</h3>
+        {s.faq.locBody}
       </section>
 
       <section className="faq-sec">
-        <h3>Сжатие — без моделей</h3>
-        <p>
-          Сжатие никаких моделей не требует и работает сразу: кодеки MozJPEG,
-          WebP, AVIF и OxiPNG собраны в саму программу.
-        </p>
+        <h3>{s.faq.compressTitle}</h3>
+        <p>{s.faq.compressBody}</p>
       </section>
 
       <section className="faq-sec">
-        <h3>Где лежат скачанные модели</h3>
+        <h3>{s.faq.dirTitle}</h3>
         <p className="faq-path">{dir || "…"}</p>
-        <p className="faq-note">
-          Папку можно удалить целиком — программа не сломается, просто предложит
-          скачать модели заново. Свои <code>.onnx</code> положить туда пока
-          нельзя: читаются только модели из списка выше.
-        </p>
+        {s.faq.dirNote}
       </section>
     </div>
   );

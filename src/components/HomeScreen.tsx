@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { onDragHover, pickImage, type Picked } from "../lib/intake";
 import { hasTauri } from "../lib/tauri";
+import { useStrings } from "../lib/i18n";
 
 export type Tool = "compress" | "upscale" | "background";
 
@@ -15,34 +16,15 @@ const CARDS: {
   cls: string;
   num: string;
   name: string;
-  desc: string;
   checker?: boolean;
 }[] = [
-  {
-    tool: "compress",
-    cls: "c1",
-    num: "01",
-    name: "COMPRESS",
-    desc: "Сжать файл без потери деталей.",
-  },
-  {
-    tool: "upscale",
-    cls: "c2",
-    num: "02",
-    name: "UPSCALE",
-    desc: "Увеличить и повысить резкость.",
-  },
-  {
-    tool: "background",
-    cls: "c3",
-    num: "03",
-    name: "REMOVE BG",
-    desc: "Вырезать объект, убрать фон.",
-    checker: true,
-  },
+  { tool: "compress", cls: "c1", num: "01", name: "COMPRESS" },
+  { tool: "upscale", cls: "c2", num: "02", name: "UPSCALE" },
+  { tool: "background", cls: "c3", num: "03", name: "REMOVE BG", checker: true },
 ];
 
 export function HomeBody({ file, onFile, onPick }: Props) {
+  const s = useStrings();
   const [over, setOver] = useState(false);
   const [thumb, setThumb] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -74,7 +56,7 @@ export function HomeBody({ file, onFile, onPick }: Props) {
       inputRef.current?.click();
       return;
     }
-    const picked = await pickImage();
+    const picked = await pickImage(s.intake.imagesFilter);
     if (picked) onFile(picked);
   };
 
@@ -109,10 +91,8 @@ export function HomeBody({ file, onFile, onPick }: Props) {
       >
         {fileInput}
         <div className="plus" />
-        <div className="dz-title">Перетащите изображение сюда</div>
-        <div className="dz-sub">
-          бросьте файл в любое место окна или <u>нажмите, чтобы выбрать</u>
-        </div>
+        <div className="dz-title">{s.app.dropTitle}</div>
+        <div className="dz-sub">{s.home.dropSubClick}</div>
       </div>
     );
   }
@@ -124,15 +104,15 @@ export function HomeBody({ file, onFile, onPick }: Props) {
       <div className="loaded-strip">
         {thumb && <img className="ls-thumb" src={thumb} alt="" />}
         <div className="ls-info">
-          <div className="ls-label">Изображение загружено</div>
+          <div className="ls-label">{s.home.loaded}</div>
           <div className="ls-name">{file.name}</div>
         </div>
         <button className="b-btn" onClick={pick}>
-          Заменить
+          {s.home.replace}
         </button>
       </div>
 
-      <div className="tool-head">Что сделаем?</div>
+      <div className="tool-head">{s.home.toolHead}</div>
       <div className="tool-grid">
         {CARDS.map((c) => (
           <button
@@ -142,7 +122,7 @@ export function HomeBody({ file, onFile, onPick }: Props) {
           >
             <span className="num">{c.num}</span>
             <span className="tname">{c.name}</span>
-            <span className="desc">{c.desc}</span>
+            <span className="desc">{s.home.cards[c.tool]}</span>
             {c.checker && (
               <span className="checker-chip b-checker">
                 <span className="dot" />
