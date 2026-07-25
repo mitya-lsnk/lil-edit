@@ -5,7 +5,7 @@
   "type": "module",
   "description": "Cross-platform desktop image toolkit: compression, background removal, and upscaling — all local and offline.",
   "license": "MIT",
-  "author": "mitya-lsnk",
+  "author": "lsnk",
   "repository": {
     "type": "git",
     "url": "https://github.com/mitya-lsnk/lil-image.git"

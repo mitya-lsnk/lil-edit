@@ -6,6 +6,7 @@ import { HomeBody, type Tool } from "./components/HomeScreen";
 import { CompressPanel } from "./components/CompressPanel";
 import { BackgroundPanel } from "./components/BackgroundPanel";
 import { UpscalePanel } from "./components/UpscalePanel";
+import { EditPanel } from "./components/EditPanel";
 import { FaqScreen } from "./components/FaqScreen";
 import { SettingsScreen } from "./components/SettingsScreen";
 import { SkinPicker } from "./components/SkinPicker";
@@ -20,7 +21,7 @@ import { useStrings } from "./lib/i18n";
 
 type Screen = "home" | "faq" | "settings" | Tool;
 
-const TOOL_ORDER: Tool[] = ["compress", "upscale", "background"];
+const TOOL_ORDER: Tool[] = ["edit", "compress", "upscale", "background"];
 
 function App() {
   const s = useStrings();
@@ -184,6 +185,14 @@ function App() {
               onChange={(e) => onInputFiles(e.target.files)}
             />
             <FileStrip file={file} onReplace={replace} />
+            {screen === "edit" && (
+              <EditPanel
+                file={file}
+                srcDir={srcDir}
+                onSendTo={sendTo}
+                onSaved={setSavedPath}
+              />
+            )}
             {screen === "compress" && (
               <CompressPanel
                 file={file}

@@ -3,7 +3,7 @@ import { onDragHover, pickImage, type Picked } from "../lib/intake";
 import { hasTauri } from "../lib/tauri";
 import { useStrings } from "../lib/i18n";
 
-export type Tool = "compress" | "upscale" | "background";
+export type Tool = "compress" | "upscale" | "background" | "edit";
 
 interface Props {
   file: File | null;
@@ -21,6 +21,7 @@ const CARDS: {
   { tool: "compress", cls: "c1", num: "01", name: "COMPRESS" },
   { tool: "upscale", cls: "c2", num: "02", name: "UPSCALE" },
   { tool: "background", cls: "c3", num: "03", name: "REMOVE BG", checker: true },
+  { tool: "edit", cls: "c4", num: "04", name: "EDIT" },
 ];
 
 export function HomeBody({ file, onFile, onPick }: Props) {

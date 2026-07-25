@@ -135,6 +135,22 @@
   background: var(--accent);
   color: var(--accent-ink);
 }
+/* 4th card (Edit): flat paper like the rest; green index accent + cobalt run */
+[data-skin="riso"] .tool-card.c4 .tname,
+[data-skin="riso"] .tool-card.c4 .desc {
+  color: inherit;
+}
+[data-skin="riso"] .tool-card.c4 .tname {
+  color: var(--ok);
+}
+[data-skin="riso"] .tool-card.c4 .num {
+  background: var(--ok);
+  color: #fff;
+}
+[data-skin="riso"] .tool-card.c4 .run {
+  background: var(--accent-2);
+  color: var(--accent-2-ink);
+}
 
 /* primary CTA: solid cobalt, paper text — clean and readable */
 [data-skin="riso"] .b-btn--solid {
@@ -310,9 +326,14 @@
 [data-skin="te"] .tool-card.c3::before {
   background: var(--accent-3);
 }
+[data-skin="te"] .tool-card.c4::before {
+  background: var(--ok);
+}
 [data-skin="te"] .tool-card .tname,
 [data-skin="te"] .tool-card.c3 .tname,
-[data-skin="te"] .tool-card.c3 .desc {
+[data-skin="te"] .tool-card.c3 .desc,
+[data-skin="te"] .tool-card.c4 .tname,
+[data-skin="te"] .tool-card.c4 .desc {
   color: var(--ink);
 }
 [data-skin="te"] .tool-card .num {
@@ -336,6 +357,10 @@
 }
 [data-skin="te"] .tool-card.c3 .run {
   background: var(--accent-3);
+  color: #fff;
+}
+[data-skin="te"] .tool-card.c4 .run {
+  background: var(--ok);
   color: #fff;
 }
 
@@ -530,6 +555,10 @@
 }
 [data-skin="riso"] .tool-card.c3::after {
   content: "抜";
+}
+[data-skin="riso"] .tool-card.c4::after {
+  content: "切";
+  color: var(--ok);
 }
 [data-skin="riso"] .tool-card:hover {
   transform: translate(-2px, -2px) rotate(-0.6deg) !important;

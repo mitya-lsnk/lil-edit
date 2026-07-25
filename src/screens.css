@@ -241,7 +241,7 @@
 /* ---------- Tool cards ---------- */
 .tool-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 22px;
   max-width: 1020px;
 }
@@ -278,6 +278,10 @@
   background: var(--blue);
   transform: rotate(-1deg) translateZ(0);
 }
+.tool-card.c4 {
+  background: var(--ok);
+  transform: rotate(1.2deg) translateZ(0);
+}
 .tool-card .num {
   font-family: var(--font-mono);
   font-weight: 700;
@@ -289,7 +293,9 @@
   line-height: 1.05;
 }
 .tool-card.c3 .tname,
-.tool-card.c3 .desc {
+.tool-card.c3 .desc,
+.tool-card.c4 .tname,
+.tool-card.c4 .desc {
   color: #fff;
 }
 .tool-card .desc {
@@ -313,6 +319,9 @@
 }
 .tool-card.c3 .stat {
   color: var(--blue);
+}
+.tool-card.c4 .stat {
+  color: var(--ok);
 }
 .tool-card .run {
   margin-top: auto;
@@ -1579,4 +1588,158 @@
   background-size: 8px 8px;
   background-position: 0 0, 4px 4px;
   background-color: #fff;
+}
+
+/* =========================================================
+   Edit tool — crop / resize / rotate / flip
+   ========================================================= */
+.edit-bar,
+.edit-crop-bar,
+.edit-resize-bar {
+  align-items: center;
+  gap: 14px;
+}
+.edit-ops {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+/* square icon buttons for rotate/flip/history */
+.edit-icn {
+  min-width: 42px;
+  justify-content: center;
+  padding: 9px 10px;
+  font-size: 17px;
+  line-height: 1;
+}
+.edit-dims {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.edit-x {
+  align-self: flex-end;
+  padding-bottom: 9px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  color: var(--muted);
+}
+.edit-num {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+/* aspect-ratio preset chips */
+.edit-ratios {
+  display: inline-flex;
+  flex-wrap: wrap;
+  border: var(--bd);
+  background: var(--white);
+}
+.edit-ratios button {
+  border: none;
+  border-right: var(--bd);
+  background: var(--white);
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 12px;
+  padding: 9px 12px;
+  cursor: pointer;
+}
+.edit-ratios button:last-child {
+  border-right: none;
+}
+.edit-ratios button.active {
+  background: var(--ink);
+  color: var(--yellow);
+}
+
+/* preview stage: full width, image centered, overlay maps onto it */
+.edit-stage {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+.edit-canvas-wrap {
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  user-select: none;
+  touch-action: none;
+  max-width: 100%;
+}
+.edit-canvas-wrap img {
+  display: block;
+  pointer-events: none;
+}
+
+/* crop rectangle: bright outline, everything outside dimmed via a huge shadow */
+.crop-box {
+  position: absolute;
+  box-sizing: border-box;
+  border: 1.5px solid #fff;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.45);
+  cursor: move;
+  touch-action: none;
+}
+.crop-handle {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.55);
+  touch-action: none;
+}
+.crop-handle.nw {
+  left: -8px;
+  top: -8px;
+  cursor: nwse-resize;
+}
+.crop-handle.ne {
+  right: -8px;
+  top: -8px;
+  cursor: nesw-resize;
+}
+.crop-handle.sw {
+  left: -8px;
+  bottom: -8px;
+  cursor: nesw-resize;
+}
+.crop-handle.se {
+  right: -8px;
+  bottom: -8px;
+  cursor: nwse-resize;
+}
+/* rule-of-thirds guides */
+.crop-third {
+  position: absolute;
+  background: rgba(255, 255, 255, 0.4);
+  pointer-events: none;
+}
+.crop-third.v1,
+.crop-third.v2 {
+  top: 0;
+  bottom: 0;
+  width: 1px;
+}
+.crop-third.v1 {
+  left: 33.333%;
+}
+.crop-third.v2 {
+  left: 66.666%;
+}
+.crop-third.h1,
+.crop-third.h2 {
+  left: 0;
+  right: 0;
+  height: 1px;
+}
+.crop-third.h1 {
+  top: 33.333%;
+}
+.crop-third.h2 {
+  top: 66.666%;
 }

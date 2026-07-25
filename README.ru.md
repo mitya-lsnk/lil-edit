@@ -17,6 +17,7 @@
 | Функция | Статус | Движок |
 |---|---|---|
 | **Сжатие** | ✅ готово, проверено | jSquash (WASM): MozJPEG, WebP, AVIF, OxiPNG |
+| **Правка** | ✅ готово | Кроп (шаблоны пропорций), размер (px/%), поворот/отражение — на canvas, без моделей |
 | **Менеджер моделей** | ✅ готово | Скачивание с прогрессом + распаковка, в Rust |
 | **Удаление фона** | ✅ реализовано | ONNX (BiRefNet / U²-Net / IS-Net / Silueta) через `ort` |
 | **Апскейл** | ✅ реализовано | Три ncnn-vulkan движка: Upscayl, Real-ESRGAN, waifu2x |
@@ -127,10 +128,12 @@ lil-image/
 │   │   ├── intake.ts         # приём файла: нативный drag-drop/диалог, отдаёт путь
 │   │   ├── fsx.ts            # чтение/запись файлов в обход scope fs-плагина
 │   │   ├── i18n.tsx          # контекст языка (RU/EN), следует за ОС, запоминает
+│   │   ├── edit.ts           # кроп / размер / поворот / отражение на <canvas>
 │   │   └── strings.tsx       # весь текст интерфейса, оба языка
 │   └── components/
 │       ├── DropZone.tsx
 │       ├── CompressPanel.tsx
+│       ├── EditPanel.tsx
 │       ├── BackgroundPanel.tsx
 │       ├── UpscalePanel.tsx
 │       ├── ModelManager.tsx
@@ -171,4 +174,4 @@ Upscayl-ncnn, Real-ESRGAN, waifu2x и веса моделей) — точные 
 
 ## Лицензия
 
-[MIT](LICENSE) © 2026 mitya-lsnk
+[MIT](LICENSE) © 2026 lsnk
