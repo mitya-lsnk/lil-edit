@@ -66,6 +66,10 @@ Build a release `.app` / `.dmg` / `.exe`:
 npm run tauri build
 ```
 
+The macOS build lands in `src-tauri/target/release/bundle/` — `macos/lil image.app`
+plus a `.dmg`. Drag the `.app` into `/Applications` and launch it from Launchpad or
+Spotlight like any other app: no terminal, no dev server, no port to keep free.
+
 > Running `npm run dev` opens the frontend in a plain browser. Compression works there,
 > but background removal and upscaling need the Rust backend, and the "save next to the
 > original" default needs the native file path — both only exist in the Tauri app.
