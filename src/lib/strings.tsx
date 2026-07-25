@@ -68,6 +68,31 @@ const ru = {
     save: "Сохранить PNG ↓",
     saved: "Сохранено:",
   },
+  batch: {
+    title: "ПАКЕТ",
+    tab: "Пакет",
+    source: "Источник",
+    dest: "Назначение",
+    sourcePh: "Папка с изображениями…",
+    destPh: "Куда сохранять…",
+    pickFolder: "Папка…",
+    remember: "Запомнить",
+    operation: "Операция",
+    found: (n: number) => `Найдено изображений: ${n}`,
+    empty: "В папке нет изображений",
+    process: "Обработать все →",
+    cancel: "Отмена",
+    done: (ok: number, total: number) => `Готово: ${ok} из ${total}.`,
+    needEngine: "Сначала скачайте движок апскейла в Настройках.",
+    needModel: "Сначала скачайте модель фона в Настройках.",
+    browser: (
+      <p>
+        <b>Пакетная обработка работает в приложении lil image.</b> Ей нужен доступ
+        к папкам на диске, которого нет в браузере. Запусти{" "}
+        <code>npm run tauri dev</code>.
+      </p>
+    ),
+  },
   compress: {
     format: "Формат",
     quality: "Качество",
@@ -363,6 +388,30 @@ const en: Dict = {
     reset: "Reset",
     save: "Save PNG ↓",
     saved: "Saved:",
+  },
+  batch: {
+    title: "BATCH",
+    tab: "Batch",
+    source: "Source",
+    dest: "Destination",
+    sourcePh: "Folder of images…",
+    destPh: "Where to save…",
+    pickFolder: "Folder…",
+    remember: "Remember",
+    operation: "Operation",
+    found: (n: number) => `Images found: ${n}`,
+    empty: "No images in this folder",
+    process: "Process all →",
+    cancel: "Cancel",
+    done: (ok: number, total: number) => `Done: ${ok} of ${total}.`,
+    needEngine: "Download an upscale engine in Settings first.",
+    needModel: "Download a background model in Settings first.",
+    browser: (
+      <p>
+        <b>Batch processing runs in the lil image app.</b> It needs folder access
+        the browser doesn't have. Run <code>npm run tauri dev</code>.
+      </p>
+    ),
   },
   compress: {
     format: "Format",

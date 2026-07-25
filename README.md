@@ -18,6 +18,7 @@ the network.
 |---|---|---|
 | **Compression** | ✅ done, tested | jSquash (WASM): MozJPEG, WebP, AVIF, OxiPNG |
 | **Editing** | ✅ done | Crop (aspect presets), resize (px/%), rotate/flip — on-canvas, no models |
+| **Batch** | ✅ done | Run one operation over a whole folder (upscale / bg / compress / resize), progress + destination folder |
 | **Model manager** | ✅ done | Download with progress + unpack, in Rust |
 | **Background removal** | ✅ implemented | ONNX (BiRefNet / U²-Net / IS-Net / Silueta) via `ort` |
 | **Upscaling** | ✅ implemented | Three ncnn-vulkan engines: Upscayl, Real-ESRGAN, waifu2x |
@@ -131,11 +132,14 @@ lil-image/
 │   │   ├── fsx.ts            # file read/write bypassing the fs-plugin scope
 │   │   ├── i18n.tsx          # language context (RU/EN), follows OS, persists
 │   │   ├── edit.ts           # crop / resize / rotate / flip on a <canvas>
+│   │   ├── engines.ts        # shared upscale engine/model registry
+│   │   ├── batch.ts          # folder batch: one operation over many files
 │   │   └── strings.tsx       # all UI text, both languages
 │   └── components/
 │       ├── DropZone.tsx
 │       ├── CompressPanel.tsx
 │       ├── EditPanel.tsx
+│       ├── BatchPanel.tsx
 │       ├── BackgroundPanel.tsx
 │       ├── UpscalePanel.tsx
 │       ├── ModelManager.tsx

@@ -21,6 +21,7 @@ pub fn run() {
             models::clear_cache,
             fsx::read_file_bytes,
             fsx::write_file_bytes,
+            fsx::list_dir_images,
             ai::upscale_image,
             bg::remove_background,
         ])

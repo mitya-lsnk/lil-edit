@@ -37,3 +37,34 @@ pub fn write_file_bytes(path: String, data: Vec<u8>) -> Result<(), String> {
     }
     std::fs::write(p, &data).map_err(|e| format!("{path}: {e}"))
 }
+
+/// Image extensions the batch queue picks up from a folder.
+const IMAGE_EXTS: &[&str] = &[
+    "png", "jpg", "jpeg", "webp", "avif", "gif", "bmp", "tif", "tiff",
+];
+
+/// List image files directly inside `dir` (non-recursive), sorted by name.
+/// Returns full paths. Used by batch processing to enqueue a whole folder.
+#[tauri::command]
+pub fn list_dir_images(dir: String) -> Result<Vec<String>, String> {
+    let entries = std::fs::read_dir(&dir).map_err(|e| format!("{dir}: {e}"))?;
+    let mut out: Vec<String> = Vec::new();
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if !path.is_file() {
+            continue;
+        }
+        let ext_ok = path
+            .extension()
+            .and_then(|e| e.to_str())
+            .map(|e| IMAGE_EXTS.contains(&e.to_lowercase().as_str()))
+            .unwrap_or(false);
+        if ext_ok {
+            if let Some(s) = path.to_str() {
+                out.push(s.to_string());
+            }
+        }
+    }
+    out.sort();
+    Ok(out)
+}

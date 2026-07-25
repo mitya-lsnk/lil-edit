@@ -7,6 +7,7 @@ import { CompressPanel } from "./components/CompressPanel";
 import { BackgroundPanel } from "./components/BackgroundPanel";
 import { UpscalePanel } from "./components/UpscalePanel";
 import { EditPanel } from "./components/EditPanel";
+import { BatchPanel } from "./components/BatchPanel";
 import { FaqScreen } from "./components/FaqScreen";
 import { SettingsScreen } from "./components/SettingsScreen";
 import { SkinPicker } from "./components/SkinPicker";
@@ -19,7 +20,7 @@ import { joinPath } from "./lib/save";
 import { hasTauri } from "./lib/tauri";
 import { useStrings } from "./lib/i18n";
 
-type Screen = "home" | "faq" | "settings" | Tool;
+type Screen = "home" | "faq" | "settings" | "batch" | Tool;
 
 const TOOL_ORDER: Tool[] = ["upscale", "background", "edit", "compress"];
 
@@ -91,13 +92,21 @@ function App() {
   const isHome = screen === "home";
   const isFaq = screen === "faq";
   const isSettings = screen === "settings";
-  const isAux = isHome || isFaq || isSettings;
-  const auxTitle = isFaq ? s.app.modelsTitle : isSettings ? s.app.settingsTitle : "";
+  const isBatch = screen === "batch";
+  const isAux = isHome || isFaq || isSettings || isBatch;
+  const auxTitle = isFaq
+    ? s.app.modelsTitle
+    : isSettings
+      ? s.app.settingsTitle
+      : isBatch
+        ? s.batch.title
+        : "";
 
-  // Models/Settings are reachable from anywhere. The header button toggles: on
-  // the screen already → back home, otherwise open it (so it doubles as its own
-  // "back" when you can't spot the logo). The logo also always goes home.
-  const toggleAux = (target: "faq" | "settings") =>
+  // Models/Settings/Batch are reachable from anywhere. The header button
+  // toggles: on the screen already → back home, otherwise open it (so it
+  // doubles as its own "back" when you can't spot the logo). The logo also
+  // always goes home.
+  const toggleAux = (target: "faq" | "settings" | "batch") =>
     setScreen((cur) => (cur === target ? "home" : target));
 
   return (
@@ -119,7 +128,7 @@ function App() {
             </button>
           )}
           {isHome && <span className="logo-sub">Image Toolkit</span>}
-          {(isFaq || isSettings) && (
+          {(isFaq || isSettings || isBatch) && (
             <span className="title-mid">{auxTitle}</span>
           )}
           {!isAux && (
@@ -150,6 +159,13 @@ function App() {
           <SkinPicker />
           <ModeToggle />
           <button
+            className={`help ${isBatch ? "active" : ""}`}
+            aria-pressed={isBatch}
+            onClick={() => toggleAux("batch")}
+          >
+            ▦ {s.batch.tab}
+          </button>
+          <button
             className={`help ${isFaq ? "active" : ""}`}
             aria-pressed={isFaq}
             onClick={() => toggleAux("faq")}
@@ -172,6 +188,8 @@ function App() {
           <FaqScreen />
         ) : isSettings ? (
           <SettingsScreen />
+        ) : isBatch ? (
+          <BatchPanel />
         ) : isHome ? (
           <>
             {dropError && <div className="b-error">{dropError}</div>}
