@@ -3,6 +3,7 @@ import { openUrl } from "@tauri-apps/plugin-opener";
 import { open } from "@tauri-apps/plugin-dialog";
 import { SKINS, useSkin } from "../lib/skin";
 import { ModelManager } from "./ModelManager";
+import { ModeToggle } from "./ModeToggle";
 import {
   cacheInfo,
   clearCache,
@@ -15,7 +16,7 @@ import { formatBytes } from "../lib/format";
 import { hasTauri } from "../lib/tauri";
 import { useStrings } from "../lib/i18n";
 
-export function SettingsScreen() {
+export function SettingsScreen({ onOpenModels }: { onOpenModels: () => void }) {
   const str = useStrings();
   const { skin, setSkin } = useSkin();
   const [cache, setCache] = useState<CacheInfo | null>(null);
@@ -82,6 +83,10 @@ export function SettingsScreen() {
       <section className="set-sec">
         <h3 className="set-h">{str.settings.appearance}</h3>
         <p className="set-lead">{str.settings.appearanceLead}</p>
+        <div className="set-mode">
+          <span className="set-loc-lbl">{str.settings.theme}</span>
+          <ModeToggle />
+        </div>
         <div className="skin-grid">
           {SKINS.map((sk) => {
             const meta = str.skins[sk.id];
@@ -227,6 +232,13 @@ export function SettingsScreen() {
         ) : (
           <p className="set-lead">{str.settings.inApp}</p>
         )}
+      </section>
+
+      {/* -------- Models info (was the header "Models" button) -------- */}
+      <section className="set-sec">
+        <button className="b-btn" onClick={onOpenModels}>
+          ? {str.settings.modelsFaq}
+        </button>
       </section>
 
       {/* -------- About -------- */}

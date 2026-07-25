@@ -62,6 +62,15 @@
 [data-skin="riso"] .app-header .title-mid {
   color: var(--ink);
 }
+/* riso/te headers are light, so the back button needs a dark border, not the
+   faint white one from the (dark) brutalist header. */
+[data-skin="riso"] .app-header .back {
+  border-color: var(--ink);
+}
+[data-skin="riso"] .app-header .back:hover {
+  background: rgba(0, 0, 0, 0.07);
+  border-color: var(--ink);
+}
 [data-skin="riso"] .app-header .title-mid {
   color: var(--accent);
 }
@@ -272,6 +281,13 @@
 [data-skin="te"] .app-header .back,
 [data-skin="te"] .app-header .title-mid {
   color: var(--ink);
+}
+[data-skin="te"] .app-header .back {
+  border-color: var(--line);
+}
+[data-skin="te"] .app-header .back:hover {
+  background: rgba(0, 0, 0, 0.07);
+  border-color: var(--ink);
 }
 
 /* soft device panels everywhere */

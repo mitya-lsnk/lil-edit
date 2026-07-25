@@ -79,6 +79,12 @@
   background: var(--accent);
   color: var(--accent-ink);
 }
+/* settings: icon-only, a touch larger than the text buttons */
+.app-header .help-icon {
+  font-size: 17px;
+  padding: 5px 12px;
+  line-height: 1;
+}
 .app-header .title-mid {
   font-family: var(--font-display);
   font-size: 19px;
@@ -1372,6 +1378,13 @@
   color: var(--muted);
   margin: 0 0 16px;
   max-width: 66ch;
+}
+/* theme (light/dark) row in the Appearance section */
+.set-mode {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
 }
 .skin-grid {
   display: grid;

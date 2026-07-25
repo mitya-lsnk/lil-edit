@@ -10,8 +10,6 @@ import { EditPanel } from "./components/EditPanel";
 import { BatchPanel } from "./components/BatchPanel";
 import { FaqScreen } from "./components/FaqScreen";
 import { SettingsScreen } from "./components/SettingsScreen";
-import { SkinPicker } from "./components/SkinPicker";
-import { ModeToggle } from "./components/ModeToggle";
 import { LanguagePicker } from "./components/LanguagePicker";
 import { FileStrip } from "./components/FileStrip";
 import { Toast } from "./components/Toast";
@@ -153,11 +151,10 @@ function App() {
 
         <span className="head-spacer" />
 
-        {/* Persistent right cluster — available on every screen. */}
+        {/* Persistent right cluster — language, batch, settings. Skins, theme
+            and the models info now live inside Settings. */}
         <div className="head-right">
           <LanguagePicker />
-          <SkinPicker />
-          <ModeToggle />
           <button
             className={`help ${isBatch ? "active" : ""}`}
             aria-pressed={isBatch}
@@ -166,19 +163,13 @@ function App() {
             ▦ {s.batch.tab}
           </button>
           <button
-            className={`help ${isFaq ? "active" : ""}`}
-            aria-pressed={isFaq}
-            onClick={() => toggleAux("faq")}
-          >
-            ? {s.app.helpModels}
-          </button>
-          <button
-            className={`help ${isSettings ? "active" : ""}`}
+            className={`help help-icon ${isSettings ? "active" : ""}`}
             aria-pressed={isSettings}
             onClick={() => toggleAux("settings")}
             aria-label={s.app.settingsAria}
+            title={s.app.settingsAria}
           >
-            ⚙ {s.app.helpSettings}
+            ⚙
           </button>
         </div>
       </header>
@@ -187,7 +178,7 @@ function App() {
         {isFaq ? (
           <FaqScreen />
         ) : isSettings ? (
-          <SettingsScreen />
+          <SettingsScreen onOpenModels={() => setScreen("faq")} />
         ) : isBatch ? (
           <BatchPanel />
         ) : isHome ? (
