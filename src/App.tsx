@@ -21,7 +21,7 @@ import { useStrings } from "./lib/i18n";
 
 type Screen = "home" | "faq" | "settings" | Tool;
 
-const TOOL_ORDER: Tool[] = ["edit", "compress", "upscale", "background"];
+const TOOL_ORDER: Tool[] = ["upscale", "background", "edit", "compress"];
 
 function App() {
   const s = useStrings();
@@ -112,6 +112,12 @@ function App() {
           >
             <span className="logo">LIL IMAGE</span>
           </button>
+          {/* Explicit way home — the logo works too, but not everyone knows that. */}
+          {!isHome && (
+            <button className="back" onClick={() => setScreen("home")}>
+              ← {s.app.back}
+            </button>
+          )}
           {isHome && <span className="logo-sub">Image Toolkit</span>}
           {(isFaq || isSettings) && (
             <span className="title-mid">{auxTitle}</span>

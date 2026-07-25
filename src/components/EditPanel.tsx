@@ -22,17 +22,22 @@ interface Props {
   onSaved: (path: string) => void;
 }
 
-// Crop aspect presets. `r` is a pixel width/height ratio; null means free-form.
+// Crop aspect presets — just the basics; anything else goes in the custom field.
+// `r` is a pixel width/height ratio; null means free-form.
 const RATIOS: { key: string; r: number | null }[] = [
   { key: "free", r: null },
   { key: "1:1", r: 1 },
-  { key: "3:2", r: 3 / 2 },
-  { key: "4:3", r: 4 / 3 },
   { key: "16:9", r: 16 / 9 },
-  { key: "2:3", r: 2 / 3 },
-  { key: "3:4", r: 3 / 4 },
-  { key: "9:16", r: 9 / 16 },
 ];
+
+// Parse a "W:H" / "W/H" / "WxH" ratio string; returns w/h or null if invalid.
+function parseRatio(str: string): number | null {
+  const m = str.trim().match(/^(\d+(?:\.\d+)?)\s*[:/xх]\s*(\d+(?:\.\d+)?)$/i);
+  if (!m) return null;
+  const w = Number(m[1]);
+  const h = Number(m[2]);
+  return w > 0 && h > 0 ? w / h : null;
+}
 
 const MAX_STAGE_H = 460; // preview height cap, px
 const MIN_CROP = 0.05; // smallest crop side, normalised
@@ -67,6 +72,7 @@ export function EditPanel({ file, srcDir, onSendTo, onSaved }: Props) {
   const [crop, setCrop] = useState<CropRect>(FULL);
   const aspectRef = useRef<number | null>(null); // normalised w/h lock
   const [ratioKey, setRatioKey] = useState("free");
+  const [customStr, setCustomStr] = useState("");
 
   // Stage geometry (the on-screen image rect the crop overlay maps onto).
   const stageRef = useRef<HTMLDivElement>(null);
@@ -216,6 +222,7 @@ export function EditPanel({ file, srcDir, onSendTo, onSaved }: Props) {
 
   function chooseRatio(key: string, r: number | null) {
     setRatioKey(key);
+    if (key !== "custom") setCustomStr("");
     if (r == null) {
       aspectRef.current = null;
       return;
@@ -224,10 +231,21 @@ export function EditPanel({ file, srcDir, onSendTo, onSaved }: Props) {
     setCrop(fitToAspect(r));
   }
 
+  function onCustom(v: string) {
+    setCustomStr(v);
+    const r = parseRatio(v);
+    if (r) {
+      setRatioKey("custom");
+      aspectRef.current = r * (cur!.height / cur!.width);
+      setCrop(fitToAspect(r));
+    }
+  }
+
   function startCrop() {
     setCrop(FULL);
     aspectRef.current = null;
     setRatioKey("free");
+    setCustomStr("");
     setCropping(true);
   }
 
@@ -316,6 +334,16 @@ export function EditPanel({ file, srcDir, onSendTo, onSaved }: Props) {
                 </button>
               ))}
             </div>
+          </div>
+          <div className="edit-num">
+            <span className="t-label">{s.edit.custom}</span>
+            <input
+              className={`t-num edit-custom ${ratioKey === "custom" ? "active" : ""}`}
+              placeholder="16:9"
+              value={customStr}
+              onFocus={(e) => e.currentTarget.select()}
+              onChange={(e) => onCustom(e.target.value)}
+            />
           </div>
           <span className="head-spacer" style={{ flex: 1 }} />
           <button className="b-btn" onClick={() => setCropping(false)}>{s.edit.cancel}</button>

@@ -18,10 +18,12 @@ const CARDS: {
   name: string;
   checker?: boolean;
 }[] = [
-  { tool: "compress", cls: "c1", num: "01", name: "COMPRESS" },
-  { tool: "upscale", cls: "c2", num: "02", name: "UPSCALE" },
-  { tool: "background", cls: "c3", num: "03", name: "REMOVE BG", checker: true },
-  { tool: "edit", cls: "c4", num: "04", name: "EDIT" },
+  // Order requested by users: Upscale → Remove BG → Edit → Compress. Each tool
+  // keeps its own colour class (cls), so only the running number reflects order.
+  { tool: "upscale", cls: "c2", num: "01", name: "UPSCALE" },
+  { tool: "background", cls: "c3", num: "02", name: "REMOVE BG", checker: true },
+  { tool: "edit", cls: "c4", num: "03", name: "EDIT" },
+  { tool: "compress", cls: "c1", num: "04", name: "COMPRESS" },
 ];
 
 export function HomeBody({ file, onFile, onPick }: Props) {

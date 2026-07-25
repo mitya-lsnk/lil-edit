@@ -1,7 +1,7 @@
 import { useStrings } from "../lib/i18n";
 import type { Tool } from "./HomeScreen";
 
-const TOOLS: Tool[] = ["edit", "compress", "upscale", "background"];
+const TOOLS: Tool[] = ["upscale", "background", "edit", "compress"];
 
 /**
  * "Next: [other tool] →" row shown next to Save. Hands the current result

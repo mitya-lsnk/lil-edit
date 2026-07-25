@@ -84,6 +84,28 @@
   font-size: 19px;
   color: var(--yellow);
 }
+/* Explicit "back to menu" button — the header is always dark, so white text
+   with a hairline border reads on every skin. */
+.app-header .back {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #fff;
+  background: transparent;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-radius: var(--radius-sm);
+  padding: 6px 12px;
+  cursor: pointer;
+  transition:
+    background var(--dur) var(--ease),
+    border-color var(--dur) var(--ease);
+}
+.app-header .back:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: #fff;
+}
 .app-header .step {
   font-family: var(--font-mono);
   font-size: 11px;
@@ -1632,16 +1654,32 @@
   white-space: nowrap;
 }
 .edit-x {
-  align-self: flex-end;
-  padding-bottom: 9px;
+  align-self: center;
   font-family: var(--font-mono);
   font-weight: 700;
   color: var(--muted);
 }
+/* label sits beside the field, not above it */
 .edit-num {
   display: flex;
-  flex-direction: column;
-  gap: 9px;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+.edit-custom {
+  width: 82px;
+}
+.edit-custom.active {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+/* keep-ratio checkbox: bigger, closer to the field/button footprint */
+.t-check.edit-lock {
+  font-size: 14px;
+}
+.t-check.edit-lock input[type="checkbox"] {
+  width: 24px;
+  height: 24px;
 }
 /* aspect-ratio preset chips */
 .edit-ratios {
