@@ -9,6 +9,10 @@ interface Props {
   file: File | null;
   onFile: (p: Picked) => void;
   onPick: (tool: Tool) => void;
+  /** Open the batch ("несколько") screen. */
+  onBatch: () => void;
+  /** Resume the tool the user was in (undefined when there's nothing to resume). */
+  onContinue?: () => void;
 }
 
 const CARDS: {
@@ -26,7 +30,7 @@ const CARDS: {
   { tool: "compress", cls: "c1", num: "04", name: "COMPRESS" },
 ];
 
-export function HomeBody({ file, onFile, onPick }: Props) {
+export function HomeBody({ file, onFile, onPick, onBatch, onContinue }: Props) {
   const s = useStrings();
   const [over, setOver] = useState(false);
   const [thumb, setThumb] = useState<string | null>(null);
@@ -76,26 +80,31 @@ export function HomeBody({ file, onFile, onPick }: Props) {
   // ---- Start state: ONLY a big drag-and-drop ----
   if (!file) {
     return (
-      <div
-        className={`home-drop big ${over ? "over" : ""}`}
-        onClick={pick}
-        onDragOver={(e) => {
-          e.preventDefault();
-          setOver(true);
-        }}
-        onDragLeave={() => setOver(false)}
-        onDrop={(e) => {
-          e.preventDefault();
-          setOver(false);
-          handleFiles(e.dataTransfer.files);
-        }}
-        role="button"
-        tabIndex={0}
-      >
-        {fileInput}
-        <div className="plus" />
-        <div className="dz-title">{s.app.dropTitle}</div>
-        <div className="dz-sub">{s.home.dropSubClick}</div>
+      <div className="home-start">
+        <div
+          className={`home-drop big ${over ? "over" : ""}`}
+          onClick={pick}
+          onDragOver={(e) => {
+            e.preventDefault();
+            setOver(true);
+          }}
+          onDragLeave={() => setOver(false)}
+          onDrop={(e) => {
+            e.preventDefault();
+            setOver(false);
+            handleFiles(e.dataTransfer.files);
+          }}
+          role="button"
+          tabIndex={0}
+        >
+          {fileInput}
+          <div className="plus" />
+          <div className="dz-title">{s.app.dropTitle}</div>
+          <div className="dz-sub">{s.home.dropSubClick}</div>
+        </div>
+        <button className="b-btn home-batch" onClick={onBatch}>
+          ▦ {s.home.batchEntry}
+        </button>
       </div>
     );
   }
@@ -110,8 +119,16 @@ export function HomeBody({ file, onFile, onPick }: Props) {
           <div className="ls-label">{s.home.loaded}</div>
           <div className="ls-name">{file.name}</div>
         </div>
+        {onContinue && (
+          <button className="b-btn b-btn--solid" onClick={onContinue}>
+            {s.home.continue} →
+          </button>
+        )}
         <button className="b-btn" onClick={pick}>
           {s.home.replace}
+        </button>
+        <button className="b-btn" onClick={onBatch}>
+          ▦ {s.batch.tab}
         </button>
       </div>
 

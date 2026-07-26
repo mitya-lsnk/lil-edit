@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import "./screens.css";
 import "./skins.css";
 import "./dark.css";
@@ -11,14 +11,20 @@ import { BatchPanel } from "./components/BatchPanel";
 import { FaqScreen } from "./components/FaqScreen";
 import { SettingsScreen } from "./components/SettingsScreen";
 import { LanguagePicker } from "./components/LanguagePicker";
+import { ModeToggle } from "./components/ModeToggle";
 import { FileStrip } from "./components/FileStrip";
 import { Toast } from "./components/Toast";
 import { onImageDrop, pickImage, splitPath, type Picked } from "./lib/intake";
 import { joinPath } from "./lib/save";
 import { hasTauri } from "./lib/tauri";
+import { checkUpdate, type UpdateInfo } from "./lib/update";
 import { useStrings } from "./lib/i18n";
 
-type Screen = "home" | "faq" | "settings" | "batch" | Tool;
+// The base screen is either home or a tool. Models/Settings/Batch are separate
+// *overlays* (`aux`) drawn on top — so the tool underneath stays mounted and its
+// result survives a trip into Settings.
+type Base = "home" | Tool;
+type Aux = "faq" | "settings" | "batch";
 
 const TOOL_ORDER: Tool[] = ["upscale", "background", "edit", "compress"];
 
@@ -27,8 +33,34 @@ function App() {
   const [picked, setPicked] = useState<Picked | null>(null);
   const [dropError, setDropError] = useState<string | null>(null);
   const [savedPath, setSavedPath] = useState<string | null>(null);
-  const [screen, setScreen] = useState<Screen>("home");
+  const [screen, setScreen] = useState<Base>("home");
+  const [aux, setAux] = useState<Aux | null>(null);
+  // The tool the user last worked in. Kept so its panel stays mounted even after
+  // a slip back to Home — they can resume with "Продолжить" instead of redoing it.
+  const [lastTool, setLastTool] = useState<Tool | null>(null);
 
+  // Update check (lightweight: compare to the latest GitHub release, offer a
+  // download — nothing installs itself). Runs once quietly at startup and again
+  // on demand from Settings.
+  const [update, setUpdate] = useState<UpdateInfo | null>(null);
+  const [checking, setChecking] = useState(false);
+  const [checkFailed, setCheckFailed] = useState(false);
+  const runCheck = useCallback(async () => {
+    setChecking(true);
+    setCheckFailed(false);
+    try {
+      setUpdate(await checkUpdate());
+    } catch {
+      setCheckFailed(true);
+    } finally {
+      setChecking(false);
+    }
+  }, []);
+  useEffect(() => {
+    if (hasTauri()) void runCheck();
+  }, [runCheck]);
+
+  const mainRef = useRef<HTMLElement>(null);
   const file = picked?.file ?? null;
   // Folder of the original — the Save dialogs open there.
   const srcDir = picked?.path ? splitPath(picked.path).dir : null;
@@ -46,6 +78,13 @@ function App() {
       }, setDropError),
     [],
   );
+
+  // Land at the top when the screen or overlay changes — otherwise opening the
+  // (short) FAQ from a scrolled-down Settings leaves you stuck at the bottom.
+  useEffect(() => {
+    mainRef.current?.scrollTo?.({ top: 0 });
+    window.scrollTo({ top: 0 });
+  }, [aux, screen]);
 
   // Swap the current image from inside a tool. Native picker in the app (so we
   // learn the path), hidden file input in the browser.
@@ -72,11 +111,18 @@ function App() {
   // Hand a tool's result to another tool as its next input, no save round-trip.
   // The result has no real path, but it logically belongs in the original's
   // folder — synthesize a path there so Save still defaults next to the source.
+  // Go to a tool, remembering it so Home can offer to resume.
+  function goTool(tool: Tool) {
+    setScreen(tool);
+    setLastTool(tool);
+    setAux(null);
+  }
+
   function sendTo(next: File, tool: Tool) {
     const path = srcDir ? joinPath(srcDir, next.name) : null;
     setDropError(null);
     setPicked({ file: next, path });
-    setScreen(tool);
+    goTool(tool);
   }
 
   // Wipe the working image and every derived result — a clean slate for the
@@ -85,51 +131,51 @@ function App() {
     setSavedPath(null);
     setPicked(null);
     setScreen("home");
+    setAux(null);
+    setLastTool(null);
   }
 
   const isHome = screen === "home";
-  const isFaq = screen === "faq";
-  const isSettings = screen === "settings";
-  const isBatch = screen === "batch";
-  const isAux = isHome || isFaq || isSettings || isBatch;
-  const auxTitle = isFaq
-    ? s.app.modelsTitle
-    : isSettings
-      ? s.app.settingsTitle
-      : isBatch
-        ? s.batch.title
-        : "";
+  const onTool = screen !== "home";
+  // Which tool's panel to keep mounted: the open one, or (on Home) the last one.
+  const tool: Tool | null = onTool ? (screen as Tool) : lastTool;
+  const auxTitle =
+    aux === "faq"
+      ? s.app.modelsTitle
+      : aux === "settings"
+        ? s.app.settingsTitle
+        : aux === "batch"
+          ? s.batch.title
+          : "";
 
-  // Models/Settings/Batch are reachable from anywhere. The header button
-  // toggles: on the screen already → back home, otherwise open it (so it
-  // doubles as its own "back" when you can't spot the logo). The logo also
-  // always goes home.
-  const toggleAux = (target: "faq" | "settings" | "batch") =>
-    setScreen((cur) => (cur === target ? "home" : target));
+  // Overlays toggle on their own trigger (so a second click closes them) and
+  // never touch `screen`, so the tool underneath keeps its state.
+  const toggleAux = (target: Aux) =>
+    setAux((cur) => (cur === target ? null : target));
+  const openBatch = () => setAux("batch");
+  const goHome = () => {
+    setScreen("home");
+    setAux(null);
+  };
+  // Back: close an open overlay first (revealing the tool), else go home.
+  const goBack = () => (aux ? setAux(null) : setScreen("home"));
 
   return (
     <div className="app-shell">
       <header className="app-header">
         <div className="head-left">
           {/* The logo is the way home — no separate back/menu button. */}
-          <button
-            className="logo-btn"
-            onClick={() => setScreen("home")}
-            aria-label="lil image — home"
-          >
+          <button className="logo-btn" onClick={goHome} aria-label="lil image — home">
             <span className="logo">LIL IMAGE</span>
           </button>
-          {/* Explicit way home — the logo works too, but not everyone knows that. */}
-          {!isHome && (
-            <button className="back" onClick={() => setScreen("home")}>
+          {/* Explicit way back — closes an overlay, else goes home. */}
+          {(aux || onTool) && (
+            <button className="back" onClick={goBack}>
               ← {s.app.back}
             </button>
           )}
-          {isHome && <span className="logo-sub">Image Toolkit</span>}
-          {(isFaq || isSettings || isBatch) && (
-            <span className="title-mid">{auxTitle}</span>
-          )}
-          {!isAux && (
+          {aux && <span className="title-mid">{auxTitle}</span>}
+          {!aux && onTool && (
             /* Jump straight between tools without a round-trip home —
                the loaded file carries over. */
             <div className="tool-switch" role="tablist">
@@ -140,7 +186,7 @@ function App() {
                   aria-selected={screen === t}
                   className={screen === t ? "active" : ""}
                   disabled={!file}
-                  onClick={() => setScreen(t)}
+                  onClick={() => goTool(t)}
                 >
                   {s.tools[t]}
                 </button>
@@ -151,47 +197,45 @@ function App() {
 
         <span className="head-spacer" />
 
-        {/* Persistent right cluster — language, batch, settings. Skins, theme
-            and the models info now live inside Settings. */}
+        {/* Persistent right cluster — theme, language, settings. Batch now lives
+            on Home and next to the loaded file; skins/models live in Settings. */}
         <div className="head-right">
+          <ModeToggle />
           <LanguagePicker />
           <button
-            className={`help ${isBatch ? "active" : ""}`}
-            aria-pressed={isBatch}
-            onClick={() => toggleAux("batch")}
-          >
-            ▦ {s.batch.tab}
-          </button>
-          <button
-            className={`help help-icon ${isSettings ? "active" : ""}`}
-            aria-pressed={isSettings}
+            className={`help help-icon ${aux === "settings" ? "active" : ""}`}
+            aria-pressed={aux === "settings"}
             onClick={() => toggleAux("settings")}
             aria-label={s.app.settingsAria}
             title={s.app.settingsAria}
           >
             ⚙
+            {update?.available && (
+              <span className="update-dot" aria-label={s.settings.update.badgeAria} />
+            )}
           </button>
         </div>
       </header>
 
-      <main className="app-body">
-        {isFaq ? (
-          <FaqScreen />
-        ) : isSettings ? (
-          <SettingsScreen onOpenModels={() => setScreen("faq")} />
-        ) : isBatch ? (
-          <BatchPanel />
-        ) : isHome ? (
+      <main className="app-body" ref={mainRef}>
+        {/* Home — only when no overlay is up. */}
+        {isHome && !aux && (
           <>
             {dropError && <div className="b-error">{dropError}</div>}
             <HomeBody
               file={file}
               onFile={setPicked}
-              onPick={(tool) => setScreen(tool)}
+              onPick={goTool}
+              onBatch={openBatch}
+              onContinue={lastTool ? () => setScreen(lastTool) : undefined}
             />
           </>
-        ) : file ? (
-          <>
+        )}
+
+        {/* Tool host — stays mounted (just hidden) while an overlay is open or the
+            user slips back Home, so an upscale/cut-out result is never lost. */}
+        {tool && file && (
+          <div className="tool-host" hidden={!!aux || isHome}>
             <input
               ref={inputRef}
               type="file"
@@ -199,8 +243,8 @@ function App() {
               hidden
               onChange={(e) => onInputFiles(e.target.files)}
             />
-            <FileStrip file={file} onReplace={replace} />
-            {screen === "edit" && (
+            <FileStrip file={file} onReplace={replace} onBatch={openBatch} />
+            {tool === "edit" && (
               <EditPanel
                 file={file}
                 srcDir={srcDir}
@@ -208,7 +252,7 @@ function App() {
                 onSaved={setSavedPath}
               />
             )}
-            {screen === "compress" && (
+            {tool === "compress" && (
               <CompressPanel
                 file={file}
                 srcDir={srcDir}
@@ -216,7 +260,7 @@ function App() {
                 onSaved={setSavedPath}
               />
             )}
-            {screen === "upscale" && (
+            {tool === "upscale" && (
               <UpscalePanel
                 file={file}
                 srcDir={srcDir}
@@ -224,7 +268,7 @@ function App() {
                 onSaved={setSavedPath}
               />
             )}
-            {screen === "background" && (
+            {tool === "background" && (
               <BackgroundPanel
                 file={file}
                 srcDir={srcDir}
@@ -232,14 +276,21 @@ function App() {
                 onSaved={setSavedPath}
               />
             )}
-          </>
-        ) : (
-          <div className="home-drop" style={{ marginBottom: 0 }}>
-            <div className="plus" />
-            <div className="dz-title">{s.app.dropTitle}</div>
-            <div className="dz-sub">{s.app.dropSub}</div>
           </div>
         )}
+
+        {/* Overlays (rendered over the hidden tool host). */}
+        {aux === "faq" && <FaqScreen />}
+        {aux === "settings" && (
+          <SettingsScreen
+            onOpenModels={() => setAux("faq")}
+            update={update}
+            checking={checking}
+            checkFailed={checkFailed}
+            onCheck={runCheck}
+          />
+        )}
+        {aux === "batch" && <BatchPanel />}
       </main>
 
       {savedPath && (

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import {
   compressFile,
   FORMAT_META,
@@ -8,6 +8,8 @@ import {
 import { formatBytes, pct } from "../lib/format";
 import { saveBytes } from "../lib/save";
 import { Compare } from "./Compare";
+import { SingleView } from "./SingleView";
+import { type Matte } from "../lib/matteBg";
 import { PipeButtons } from "./PipeButtons";
 import type { Tool } from "./HomeScreen";
 import { useStrings } from "../lib/i18n";
@@ -31,6 +33,7 @@ export function CompressPanel({ file, srcDir, onSendTo, onSaved }: Props) {
   const [result, setResult] = useState<CompressResult | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [matte, setMatte] = useState<Matte>("theme");
 
   // StrictMode-safe object URL for the original.
   const [originalUrl, setOriginalUrl] = useState<string>("");
@@ -82,42 +85,41 @@ export function CompressPanel({ file, srcDir, onSendTo, onSaved }: Props) {
   return (
     <div>
       <div className="t-controls compress-controls">
-        <div className="cc-left">
-          <div className="t-field">
-            <span className="t-label">{s.compress.format}</span>
-            <div className="t-seg">
-              {FORMATS.map((f) => (
-                <button
-                  key={f}
-                  className={format === f ? "active" : ""}
-                  onClick={() => setFormat(f)}
-                >
-                  {FORMAT_META[f].label.split(" ")[0]}
-                </button>
-              ))}
-            </div>
+        <div className="t-field">
+          <span className="t-label">{s.compress.format}</span>
+          <div className="t-seg">
+            {FORMATS.map((f) => (
+              <button
+                key={f}
+                className={format === f ? "active" : ""}
+                onClick={() => setFormat(f)}
+              >
+                {FORMAT_META[f].label.split(" ")[0]}
+              </button>
+            ))}
           </div>
+        </div>
 
-          {lossy && (
-            <div className="t-field">
-              <span className="t-label">{s.compress.quality} · {quality}</span>
+        {lossy && (
+          <div className="t-field cc-quality">
+            <span className="t-label">{s.compress.quality} · {quality}</span>
+            <div className="cc-range">
               <input
                 className="t-range"
                 type="range"
                 min={1}
                 max={100}
                 value={quality}
+                style={{ ["--fill"]: `${quality}%` } as CSSProperties}
                 onChange={(e) => setQuality(Number(e.target.value))}
               />
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
-        <button
-          className="b-btn b-btn--solid cc-run"
-          onClick={run}
-          disabled={busy}
-        >
+        <span className="head-spacer" style={{ flex: 1 }} />
+
+        <button className="b-btn b-btn--solid" onClick={run} disabled={busy}>
           {busy ? s.compress.running : s.compress.run}
         </button>
       </div>
@@ -132,17 +134,18 @@ export function CompressPanel({ file, srcDir, onSendTo, onSaved }: Props) {
           afterLabel={meta.label.split(" ")[0]}
           beforeMeta={formatBytes(file.size)}
           afterMeta={`${formatBytes(result.size)} · −${saving < 0 ? 0 : saving}% · ${result.ms}ms`}
+          matte={matte}
+          onMatte={setMatte}
         />
       ) : (
-        <div className="single-view">
-          <div className="cmp-img-wrap">
-            {originalUrl && <img src={originalUrl} alt="original" />}
-          </div>
-          <div className="cmp-cap" style={{ borderTop: "3px solid var(--line)" }}>
-            <span>{s.compress.original}</span>
-            <span>{formatBytes(file.size)}</span>
-          </div>
-        </div>
+        <SingleView
+          url={originalUrl}
+          alt="original"
+          label={s.compress.original}
+          meta={formatBytes(file.size)}
+          matte={matte}
+          onMatte={setMatte}
+        />
       )}
 
       {result && (

@@ -1,23 +1,22 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useStrings } from "../lib/i18n";
+import { MattePicker } from "./MattePicker";
+import { type Matte, MATTE_SOLID, matteStyle } from "../lib/matteBg";
 
 interface Props {
   beforeUrl: string;
   afterUrl: string;
   beforeLabel?: string;
   afterLabel?: string;
-  beforeMeta?: string;
-  afterMeta?: string;
-  /** the "after" image has transparency (a cut-out) — enables the matte picker */
+  beforeMeta?: ReactNode;
+  afterMeta?: ReactNode;
+  /** the "after" image has transparency (a cut-out) — checker is the sane default */
   transparent?: boolean;
+  /** Controlled matte (shared with the tool's single-view). Uncontrolled if omitted. */
+  matte?: Matte;
+  onMatte?: (m: Matte) => void;
 }
-
-type Matte = "checker" | "white" | "black";
-const MATTE_BG: Record<Exclude<Matte, "checker">, string> = {
-  white: "#ffffff",
-  black: "#111111",
-};
 
 /**
  * hold  — result on screen, press and hold to peek at the original (default)
@@ -48,18 +47,25 @@ export function Compare({
   beforeMeta,
   afterMeta,
   transparent,
+  matte: matteProp,
+  onMatte,
 }: Props) {
   const s = useStrings();
   beforeLabel ??= s.compare.before;
   afterLabel ??= s.compare.after;
-  const [mode, setMode] = useState<Mode>("hold");
+  const [mode, setMode] = useState<Mode>("split");
   const [pct, setPct] = useState(50);
   const [full, setFull] = useState(false);
-  // Backdrop shown behind a transparent cut-out, so leftover fringes are visible
-  // against every kind of background.
-  const [matte, setMatte] = useState<Matte>("checker");
-  // The loupe follows the cursor by default; the toggle is just an escape hatch.
-  const [loupe, setLoupe] = useState(true);
+  // Backdrop behind the preview. Letterbox for an opaque result, seen through a
+  // transparent cut-out. Controlled by the parent tool when props are passed
+  // (so the picker is shared with the single-view); otherwise self-managed.
+  const [matteInner, setMatteInner] = useState<Matte>(
+    transparent ? "checker" : "theme",
+  );
+  const matte = matteProp ?? matteInner;
+  const setMatte = onMatte ?? setMatteInner;
+  // Off by default — the loupe is opt-in via the corner toggle.
+  const [loupe, setLoupe] = useState(false);
   const [holding, setHolding] = useState(false);
 
   const splitRef = useRef<HTMLDivElement>(null);
@@ -92,11 +98,26 @@ export function Compare({
       el.style.display = "block";
       el.style.left = `${n.x}px`;
       el.style.top = `${n.y}px`;
-      el.style.backgroundImage = `url("${n.src}")`;
-      el.style.backgroundSize = n.size;
-      el.style.backgroundPosition = n.pos;
-      el.style.backgroundColor = n.matteColor ?? "";
-      el.classList.toggle("b-checker", n.checker);
+      if (n.checker) {
+        // The zoomed photo is the top background layer; two checker gradients
+        // sit below it, so transparent pixels reveal the checkerboard (not the
+        // element's own fill). A single backgroundImage would hide the checker.
+        const ck =
+          "linear-gradient(45deg,#d8d8d8 25%,transparent 25%,transparent 75%,#d8d8d8 75%)";
+        el.style.backgroundImage = `url("${n.src}"), ${ck}, ${ck}`;
+        el.style.backgroundSize = `${n.size}, 20px 20px, 20px 20px`;
+        el.style.backgroundPosition = `${n.pos}, 0 0, 10px 10px`;
+        // The photo layer must not tile, but the checker gradients must — the
+        // element's blanket `no-repeat` would otherwise leave one lonely tile.
+        el.style.backgroundRepeat = "no-repeat, repeat, repeat";
+        el.style.backgroundColor = "#fff";
+      } else {
+        el.style.backgroundImage = `url("${n.src}")`;
+        el.style.backgroundSize = n.size;
+        el.style.backgroundPosition = n.pos;
+        el.style.backgroundRepeat = "no-repeat";
+        el.style.backgroundColor = n.matteColor ?? "";
+      }
     });
   }
 
@@ -134,8 +155,10 @@ export function Compare({
       size: `${dw * ZOOM}px ${dh * ZOOM}px`,
       src,
       matteColor:
-        isAfter && transparent && matte !== "checker" ? MATTE_BG[matte] : null,
-      checker: !!(isAfter && transparent && matte === "checker"),
+        isAfter && (matte === "white" || matte === "black")
+          ? MATTE_SOLID[matte]
+          : null,
+      checker: !!(isAfter && matte === "checker"),
     };
   }
 
@@ -226,14 +249,13 @@ export function Compare({
     onDragStart: (e: React.DragEvent) => e.preventDefault(),
   };
 
-  // Backdrop applied to any surface that sits behind the transparent "after".
-  const matteClass = transparent && matte === "checker" ? "b-checker" : "";
-  const matteStyle: React.CSSProperties | undefined =
-    transparent && matte !== "checker" ? { background: MATTE_BG[matte] } : undefined;
+  // Backdrop applied to any surface that sits behind the "after" preview
+  // (letterbox for an opaque result, seen through a transparent cut-out).
+  const mStyle = matteStyle(matte);
 
   const MODES: { id: Mode; label: string }[] = [
-    { id: "hold", label: s.compare.modeHold },
     { id: "split", label: s.compare.modeSplit },
+    { id: "hold", label: s.compare.modeHold },
     { id: "side", label: s.compare.modeSide },
   ];
 
@@ -256,36 +278,7 @@ export function Compare({
               </button>
             ))}
           </div>
-          <button
-            className={`cmp-tool ${loupe ? "active" : ""}`}
-            onClick={() => {
-              setLoupe((v) => !v);
-              hideLoupe();
-            }}
-            title={s.compare.loupeTitle}
-          >
-            {s.compare.loupe}
-          </button>
-          {transparent && (
-            <div className="cmp-matte" role="group" aria-label={s.compare.matteAria}>
-              <span className="cmp-matte-lbl">{s.compare.matteLabel}</span>
-              <button
-                className={`m-chk ${matte === "checker" ? "active" : ""}`}
-                onClick={() => setMatte("checker")}
-                title={s.compare.matteChecker}
-              />
-              <button
-                className={`m-wht ${matte === "white" ? "active" : ""}`}
-                onClick={() => setMatte("white")}
-                title={s.compare.matteWhite}
-              />
-              <button
-                className={`m-blk ${matte === "black" ? "active" : ""}`}
-                onClick={() => setMatte("black")}
-                title={s.compare.matteBlack}
-              />
-            </div>
-          )}
+          <MattePicker value={matte} onChange={setMatte} />
         </div>
         <div className="cmp-meta">
           {beforeMeta && <span>{beforeMeta}</span>}
@@ -299,8 +292,8 @@ export function Compare({
 
       {mode === "hold" && (
         <div
-          className={`cmp-hold ${loupe ? "loupe-on" : ""} ${!holding ? matteClass : ""}`}
-          style={!holding ? matteStyle : undefined}
+          className={`cmp-hold ${loupe ? "loupe-on" : ""}`}
+          style={mStyle}
           onPointerDown={(e) => {
             try {
               (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
@@ -341,6 +334,7 @@ export function Compare({
       {mode === "split" && (
         <div
           className={`cmp-split ${loupe ? "loupe-on" : ""}`}
+          style={mStyle}
           ref={splitRef}
           onPointerDown={(e) => {
             try {
@@ -383,8 +377,8 @@ export function Compare({
             <img ref={beforeImgRef} src={beforeUrl} alt="before" {...noDrag} />
           </div>
           <div
-            className={`layer after ${matteClass}`}
-            style={{ clipPath: `inset(0 0 0 ${pct}%)`, ...matteStyle }}
+            className="layer after"
+            style={{ clipPath: `inset(0 0 0 ${pct}%)`, ...mStyle }}
           >
             <img ref={afterImgRef} src={afterUrl} alt="after" {...noDrag} />
           </div>
@@ -403,6 +397,7 @@ export function Compare({
           <figure>
             <div
               className={`cmp-img-wrap ${loupe ? "loupe-on" : ""}`}
+              style={mStyle}
               onMouseMove={(e) =>
                 moveLoupe(
                   e.currentTarget,
@@ -423,8 +418,8 @@ export function Compare({
           </figure>
           <figure>
             <div
-              className={`cmp-img-wrap ${loupe ? "loupe-on" : ""} ${matteClass}`}
-              style={matteStyle}
+              className={`cmp-img-wrap ${loupe ? "loupe-on" : ""}`}
+              style={mStyle}
               onMouseMove={(e) =>
                 moveLoupe(
                   e.currentTarget,
@@ -446,6 +441,19 @@ export function Compare({
         </div>
       )}
 
+      {/* Loupe toggle — floating in the stage's bottom-left corner. */}
+      <button
+        className={`cmp-loupe-fab ${loupe ? "active" : ""}`}
+        onClick={() => {
+          setLoupe((v) => !v);
+          hideLoupe();
+        }}
+        title={s.compare.loupeTitle}
+        aria-pressed={loupe}
+      >
+        🔍
+      </button>
+
       {/* One persistent lens node, patched imperatively in schedulePaint (never
           re-rendered by React). Portaled to <body>: a fixed lens inside .cmp gets
           offset by WKWebView's animation-induced containing block. */}
@@ -463,8 +471,8 @@ export function Compare({
 
       {full && (
         <div
-          className={`lightbox ${matteClass}`}
-          style={matteStyle}
+          className="lightbox"
+          style={mStyle}
           onClick={() => setFull(false)}
         >
           <img src={afterUrl} alt="result" {...noDrag} />

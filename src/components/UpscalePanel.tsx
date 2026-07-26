@@ -5,6 +5,8 @@ import { upscaleImage } from "../lib/ai";
 import { saveBytes } from "../lib/save";
 import { ModelManager } from "./ModelManager";
 import { Compare } from "./Compare";
+import { SingleView } from "./SingleView";
+import { type Matte } from "../lib/matteBg";
 import { PipeButtons } from "./PipeButtons";
 import type { Tool } from "./HomeScreen";
 import { formatBytes } from "../lib/format";
@@ -28,10 +30,14 @@ export function UpscalePanel({ file, srcDir, onSendTo, onSaved }: Props) {
   const [modelValue, setModelValue] = useState<string | null>(null);
   const [scale, setScale] = useState(4);
   const [denoise, setDenoise] = useState(1);
+  const [matte, setMatte] = useState<Matte>("theme");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [resultBytes, setResultBytes] = useState<Uint8Array | null>(null);
   const [resultUrl, setResultUrl] = useState<string>("");
+  const [resultDims, setResultDims] = useState<{ w: number; h: number } | null>(
+    null,
+  );
 
   const [originalUrl, setOriginalUrl] = useState<string>("");
   useEffect(() => {
@@ -54,6 +60,16 @@ export function UpscalePanel({ file, srcDir, onSendTo, onSaved }: Props) {
     setResultUrl(url);
     return () => URL.revokeObjectURL(url);
   }, [resultBytes]);
+  // Read the final pixel dimensions off the decoded result for the meta readout.
+  useEffect(() => {
+    if (!resultUrl) {
+      setResultDims(null);
+      return;
+    }
+    const img = new Image();
+    img.onload = () => setResultDims({ w: img.naturalWidth, h: img.naturalHeight });
+    img.src = resultUrl;
+  }, [resultUrl]);
 
   async function refresh() {
     if (!hasTauri()) return;
@@ -213,17 +229,30 @@ export function UpscalePanel({ file, srcDir, onSendTo, onSaved }: Props) {
           afterUrl={resultUrl}
           beforeLabel={s.upscale.original}
           afterLabel={`×${effScale}`}
-          afterMeta={resultBytes ? formatBytes(resultBytes.length) : undefined}
+          matte={matte}
+          onMatte={setMatte}
+          afterMeta={
+            resultBytes ? (
+              <span className="cmp-res">
+                {resultDims && (
+                  <>
+                    {resultDims.w}×{resultDims.h}
+                    <br />
+                  </>
+                )}
+                {formatBytes(resultBytes.length)}
+              </span>
+            ) : undefined
+          }
         />
       ) : (
-        <div className="single-view">
-          <div className="cmp-img-wrap">
-            {originalUrl && <img src={originalUrl} alt="original" />}
-          </div>
-          <div className="cmp-cap" style={{ borderTop: "3px solid var(--line)" }}>
-            <span>{s.upscale.original}</span>
-          </div>
-        </div>
+        <SingleView
+          url={originalUrl}
+          alt="original"
+          label={s.upscale.original}
+          matte={matte}
+          onMatte={setMatte}
+        />
       )}
 
       {resultUrl && (

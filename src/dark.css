@@ -180,6 +180,14 @@
   color: #111111;
 }
 
+/* Active segmented/ratio chips fill with var(--ink) (now light) and printed
+   yellow text — unreadable (yellow on light). Repaint as an accent chip. */
+[data-mode="dark"] .t-seg button.active,
+[data-mode="dark"] .edit-ratios button.active {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
 /* Buttons in dark mode are often light-filled (solid CTA inverts to cream). The
    brutalist hard offset shadow follows --ink (now light), which read as a white
    halo behind those buttons. Drop the button shadow in dark — the fill contrast

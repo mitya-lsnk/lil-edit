@@ -30,6 +30,8 @@ const ru = {
   home: {
     loaded: "Изображение загружено",
     replace: "Заменить",
+    continue: "Продолжить",
+    batchEntry: "Обработать несколько / папку",
     toolHead: "Что сделаем?",
     dropSubClick: (
       <>
@@ -69,8 +71,8 @@ const ru = {
     saved: "Сохранено:",
   },
   batch: {
-    title: "ПАКЕТ",
-    tab: "Пакет",
+    title: "НЕСКОЛЬКО",
+    tab: "Несколько",
     source: "Источник",
     dest: "Назначение",
     sourcePh: "Папка с изображениями…",
@@ -152,7 +154,21 @@ const ru = {
     saved: "Сохранено:",
     original: "ОРИГИНАЛ",
     nobg: "БЕЗ ФОНА",
-    details: "Модели фона",
+    edge: "Края",
+    hardness: "Жёсткость",
+    grow: "Расширить / сузить, px",
+    feather: "Растушёвка, px",
+    edgeReset: "сбросить",
+    adjusting: "применяю…",
+    edgeNote:
+      "Обрабатывает только края готовой маски — это не настройка самой модели. Скорость зависит от размера изображения и мощности устройства.",
+    hardnessTip:
+      "Сдвигает границу фон/объект. Чем выше, тем сильнее полупрозрачные пиксели по краю становятся либо полностью видимыми, либо полностью убранными — убирает серую/мутную кайму. Рекомендация: 20–50.",
+    growTip:
+      "Наращивает (+) или ужимает (−) вырез. Минус съедает остаточный фон по краю; плюс возвращает срезанный край объекта (в кадр вернётся настоящий край фото). Рекомендация: −2…−1, если осталась кайма.",
+    featherTip:
+      "Размывает границу для мягкого края. Рекомендация: 1–2 px; для резкого выреза оставьте 0.",
+    details: "Модели для удаления фона",
     onboardTitle: "Выберите модель",
     onboard: (
       <p>
@@ -169,13 +185,14 @@ const ru = {
     ),
   },
   compare: {
-    modeHold: "Результат",
+    modeHold: "Зажать",
     modeSplit: "Ползунок",
     modeSide: "Рядом",
     loupe: "🔍 Лупа",
-    loupeTitle: "Лупа включается сама при наведении на изображение",
+    loupeTitle: "Лупа: наведите на изображение",
     matteLabel: "Фон:",
     matteAria: "Подложка",
+    matteTheme: "Цвет темы",
     matteChecker: "Шахматная (прозрачность)",
     matteWhite: "Белая подложка",
     matteBlack: "Чёрная подложка",
@@ -189,6 +206,8 @@ const ru = {
     source: "источник ↗",
     delete: "Удалить",
     download: "Скачать ↓",
+    cancel: "Отменить",
+    cancelling: "отмена…",
     installed: "УСТАНОВЛЕНО",
     extract: "распаковка…",
     done: "готово",
@@ -224,6 +243,7 @@ const ru = {
     upscaleEngines: "Движки апскейла",
     inApp: "Доступно в приложении.",
     aboutTitle: "О программе",
+    version: "Версия",
     about: (
       <p className="set-lead">
         <b>lil image</b> — локальный набор инструментов для изображений: сжатие,
@@ -231,6 +251,17 @@ const ru = {
         в сеть.
       </p>
     ),
+    update: {
+      check: "Проверить обновление",
+      checking: "Проверяем…",
+      upToDate: "У вас последняя версия",
+      failed: "Не удалось проверить обновления",
+      available: (v: string) => `Доступна версия ${v}`,
+      whatsNew: "Что нового",
+      download: "Скачать",
+      releasePage: "Страница релиза",
+      badgeAria: "Доступно обновление",
+    },
   },
   skins: {
     brutal: { name: "Нео-брутализм", tagline: "жёсткие рамки, тени, жёлтый" },
@@ -263,6 +294,23 @@ const ru = {
   faq: {
     heading: "Какие модели читает программа",
     lead: "Программа не сканирует произвольные файлы: она работает со своим списком моделей и скачивает их сама. Всё считается локально, без интернета — сеть нужна только в момент загрузки модели.",
+    typesTitle: "Какие типы моделей поддерживаются",
+    types: (
+      <ul className="faq-list">
+        <li>
+          <b>Удаление фона</b> — модели формата <b>ONNX</b> (архитектуры U²-Net,
+          IS-Net, BiRefNet), совместимые с rembg.
+        </li>
+        <li>
+          <b>Апскейл</b> — движки <b>ncnn-vulkan</b> (Real-ESRGAN, Upscayl,
+          waifu2x): бинарник плюс веса <code>.param</code>/<code>.bin</code>.
+        </li>
+        <li>
+          Всё берётся из встроенного списка и скачивается менеджером внутри
+          приложения. Подключить свой файл модели пока нельзя.
+        </li>
+      </ul>
+    ),
     bgTitle: "Удаление фона — формат ONNX",
     bgCols: { model: "Модель", weight: "Вес", input: "Вход", memory: "Память" },
     bgRows: {
@@ -353,6 +401,8 @@ const en: Dict = {
   home: {
     loaded: "Image loaded",
     replace: "Replace",
+    continue: "Continue",
+    batchEntry: "Batch / whole folder",
     toolHead: "What next?",
     dropSubClick: (
       <>
@@ -476,7 +526,21 @@ const en: Dict = {
     saved: "Saved:",
     original: "ORIGINAL",
     nobg: "NO BG",
-    details: "Background models",
+    edge: "Edges",
+    hardness: "Hardness",
+    grow: "Grow / shrink, px",
+    feather: "Feather, px",
+    edgeReset: "reset",
+    adjusting: "applying…",
+    edgeNote:
+      "Only touches the edges of the finished mask — it's not a setting of the model itself. Speed depends on image size and your device.",
+    hardnessTip:
+      "Shifts the subject/background cutoff. Higher pushes semi-transparent edge pixels to fully kept or fully cut — clears a gray fringe. Suggested: 20–50.",
+    growTip:
+      "Grows (+) or shrinks (−) the cut-out. Minus eats a leftover background fringe; plus restores a clipped edge (real photo pixels come back). Suggested: −2…−1 if a fringe remains.",
+    featherTip:
+      "Blurs the edge for a softer cut-out. Suggested: 1–2 px; leave at 0 for a crisp edge.",
+    details: "Background removal models",
     onboardTitle: "Pick a model",
     onboard: (
       <p>
@@ -493,13 +557,14 @@ const en: Dict = {
     ),
   },
   compare: {
-    modeHold: "Result",
+    modeHold: "Hold",
     modeSplit: "Slider",
     modeSide: "Side by side",
     loupe: "🔍 Loupe",
-    loupeTitle: "The loupe turns on by itself when you hover the image",
+    loupeTitle: "Loupe: hover the image",
     matteLabel: "Backdrop:",
     matteAria: "Backdrop",
+    matteTheme: "Theme colour",
     matteChecker: "Checkerboard (transparency)",
     matteWhite: "White backdrop",
     matteBlack: "Black backdrop",
@@ -513,6 +578,8 @@ const en: Dict = {
     source: "source ↗",
     delete: "Remove",
     download: "Download ↓",
+    cancel: "Cancel",
+    cancelling: "cancelling…",
     installed: "INSTALLED",
     extract: "extracting…",
     done: "done",
@@ -548,6 +615,7 @@ const en: Dict = {
     upscaleEngines: "Upscale engines",
     inApp: "Available in the app.",
     aboutTitle: "About",
+    version: "Version",
     about: (
       <p className="set-lead">
         <b>lil image</b> is a local image toolkit: compression, upscaling and
@@ -555,6 +623,17 @@ const en: Dict = {
         the network.
       </p>
     ),
+    update: {
+      check: "Check for updates",
+      checking: "Checking…",
+      upToDate: "You're on the latest version",
+      failed: "Couldn't check for updates",
+      available: (v: string) => `Version ${v} is available`,
+      whatsNew: "What's new",
+      download: "Download",
+      releasePage: "Release page",
+      badgeAria: "Update available",
+    },
   },
   skins: {
     brutal: { name: "Neo-brutalism", tagline: "hard borders, shadows, yellow" },
@@ -587,6 +666,23 @@ const en: Dict = {
   faq: {
     heading: "Which models the program reads",
     lead: "The program doesn't scan arbitrary files: it works from its own list of models and downloads them itself. Everything runs locally, no internet — the network is only needed while a model downloads.",
+    typesTitle: "Which model types are supported",
+    types: (
+      <ul className="faq-list">
+        <li>
+          <b>Background removal</b> — <b>ONNX</b> models (U²-Net, IS-Net,
+          BiRefNet architectures), rembg-compatible.
+        </li>
+        <li>
+          <b>Upscaling</b> — <b>ncnn-vulkan</b> engines (Real-ESRGAN, Upscayl,
+          waifu2x): a binary plus <code>.param</code>/<code>.bin</code> weights.
+        </li>
+        <li>
+          Everything comes from the built-in list and is fetched by the in-app
+          manager. Adding your own model file isn't supported yet.
+        </li>
+      </ul>
+    ),
     bgTitle: "Background removal — ONNX format",
     bgCols: { model: "Model", weight: "Weight", input: "Input", memory: "Memory" },
     bgRows: {

@@ -36,7 +36,7 @@ export interface BatchSettings {
 export interface BatchPaths {
   source: string;
   dest: string;
-  /** When false, `dest` mirrors `source`; when true it's kept independently. */
+  /** When true, the two paths are remembered across restarts. */
   remember: boolean;
 }
 
@@ -83,6 +83,14 @@ export function savePaths(p: BatchPaths): void {
     localStorage.setItem(PATHS_KEY, JSON.stringify(p));
   } catch {
     /* ignore quota */
+  }
+}
+
+export function clearPaths(): void {
+  try {
+    localStorage.removeItem(PATHS_KEY);
+  } catch {
+    /* ignore */
   }
 }
 

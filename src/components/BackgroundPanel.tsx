@@ -1,12 +1,20 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import { listModels, type ModelStatus } from "../lib/models";
 import { removeBackground } from "../lib/ai";
+import {
+  applyMatte,
+  DEFAULT_EDGE,
+  edgeIsIdentity,
+  type EdgeSettings,
+} from "../lib/matte";
 import { saveBytes } from "../lib/save";
 import { ModelManager } from "./ModelManager";
 import { Compare } from "./Compare";
+import { SingleView } from "./SingleView";
+import { type Matte } from "../lib/matteBg";
+import { HelpTip } from "./HelpTip";
 import { PipeButtons } from "./PipeButtons";
 import type { Tool } from "./HomeScreen";
-import { formatBytes } from "../lib/format";
 import { hasTauri } from "../lib/tauri";
 import { useStrings } from "../lib/i18n";
 
@@ -26,8 +34,14 @@ export function BackgroundPanel({ file, srcDir, onSendTo, onSaved }: Props) {
   const [selected, setSelected] = useState<string>("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // The pristine model output; `resultBytes` is it with edge tweaks applied.
+  const [rawBytes, setRawBytes] = useState<Uint8Array | null>(null);
+  const [edge, setEdge] = useState<EdgeSettings>(DEFAULT_EDGE);
+  const [adjusting, setAdjusting] = useState(false);
   const [resultBytes, setResultBytes] = useState<Uint8Array | null>(null);
   const [resultUrl, setResultUrl] = useState<string>("");
+  // Cut-outs read best against the checkerboard by default.
+  const [matte, setMatte] = useState<Matte>("checker");
 
   const [originalUrl, setOriginalUrl] = useState<string>("");
   useEffect(() => {
@@ -36,8 +50,36 @@ export function BackgroundPanel({ file, srcDir, onSendTo, onSaved }: Props) {
     return () => URL.revokeObjectURL(url);
   }, [file]);
   useEffect(() => {
+    setRawBytes(null);
     setResultBytes(null);
+    setEdge(DEFAULT_EDGE);
   }, [file]);
+
+  // Re-derive the shown/saved bytes from the raw cutout whenever the edge
+  // controls change. Debounced so dragging a slider stays smooth.
+  useEffect(() => {
+    if (!rawBytes) {
+      setResultBytes(null);
+      return;
+    }
+    if (edgeIsIdentity(edge)) {
+      setResultBytes(rawBytes);
+      setAdjusting(false);
+      return;
+    }
+    let cancelled = false;
+    setAdjusting(true);
+    const t = setTimeout(() => {
+      applyMatte(file, rawBytes, edge)
+        .then((out) => !cancelled && setResultBytes(out))
+        .catch(() => !cancelled && setResultBytes(rawBytes))
+        .finally(() => !cancelled && setAdjusting(false));
+    }, 140);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
+  }, [rawBytes, edge, file]);
   // Derive the result URL from bytes — single-effect lifecycle is StrictMode-safe.
   useEffect(() => {
     if (!resultBytes) {
@@ -84,7 +126,7 @@ export function BackgroundPanel({ file, srcDir, onSendTo, onSaved }: Props) {
     try {
       const blob = await removeBackground(file, selected);
       const buf = new Uint8Array(await blob.arrayBuffer());
-      setResultBytes(buf);
+      setRawBytes(buf);
     } catch (e) {
       setError(String(e));
     } finally {
@@ -141,17 +183,77 @@ export function BackgroundPanel({ file, srcDir, onSendTo, onSaved }: Props) {
           afterUrl={resultUrl}
           beforeLabel={s.background.original}
           afterLabel={s.background.nobg}
-          afterMeta={resultBytes ? formatBytes(resultBytes.length) : undefined}
           transparent
+          matte={matte}
+          onMatte={setMatte}
         />
       ) : (
-        <div className="single-view">
-          <div className="cmp-img-wrap">
-            {originalUrl && <img src={originalUrl} alt="original" />}
+        <SingleView
+          url={originalUrl}
+          alt="original"
+          label={s.background.original}
+          matte={matte}
+          onMatte={setMatte}
+        />
+      )}
+
+      {rawBytes && (
+        <div className="t-controls bg-edge">
+          <div className="bg-edge-head">
+            <span className="t-label">{s.background.edge}</span>
+            {adjusting && <span className="bg-edge-busy">{s.background.adjusting}</span>}
+            {!edgeIsIdentity(edge) && (
+              <button className="b-link" onClick={() => setEdge(DEFAULT_EDGE)}>
+                {s.background.edgeReset}
+              </button>
+            )}
           </div>
-          <div className="cmp-cap" style={{ borderTop: "3px solid var(--line)" }}>
-            <span>{s.background.original}</span>
+          <div className="t-field">
+            <span className="t-label">
+              <HelpTip tip={s.background.hardnessTip} />
+              {s.background.hardness} · {edge.hardness}
+            </span>
+            <input
+              className="t-range"
+              type="range"
+              min={0}
+              max={100}
+              value={edge.hardness}
+              style={{ ["--fill"]: `${edge.hardness}%` } as CSSProperties}
+              onChange={(e) => setEdge({ ...edge, hardness: Number(e.target.value) })}
+            />
           </div>
+          <div className="t-field">
+            <span className="t-label">
+              <HelpTip tip={s.background.growTip} />
+              {s.background.grow} · {edge.grow > 0 ? `+${edge.grow}` : edge.grow}
+            </span>
+            <input
+              className="t-range"
+              type="range"
+              min={-12}
+              max={12}
+              value={edge.grow}
+              style={{ ["--fill"]: `${((edge.grow + 12) / 24) * 100}%` } as CSSProperties}
+              onChange={(e) => setEdge({ ...edge, grow: Number(e.target.value) })}
+            />
+          </div>
+          <div className="t-field">
+            <span className="t-label">
+              <HelpTip tip={s.background.featherTip} />
+              {s.background.feather} · {edge.feather}
+            </span>
+            <input
+              className="t-range"
+              type="range"
+              min={0}
+              max={12}
+              value={edge.feather}
+              style={{ ["--fill"]: `${(edge.feather / 12) * 100}%` } as CSSProperties}
+              onChange={(e) => setEdge({ ...edge, feather: Number(e.target.value) })}
+            />
+          </div>
+          <p className="bg-edge-note">{s.background.edgeNote}</p>
         </div>
       )}
 

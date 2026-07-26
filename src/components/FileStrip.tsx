@@ -9,9 +9,11 @@ import { useStrings } from "../lib/i18n";
 export function FileStrip({
   file,
   onReplace,
+  onBatch,
 }: {
   file: File;
   onReplace: () => void;
+  onBatch: () => void;
 }) {
   const s = useStrings();
   const [thumb, setThumb] = useState<string | null>(null);
@@ -32,6 +34,9 @@ export function FileStrip({
       </div>
       <button className="b-btn" onClick={onReplace}>
         {s.home.replace}
+      </button>
+      <button className="b-btn" onClick={onBatch}>
+        ▦ {s.batch.tab}
       </button>
     </div>
   );

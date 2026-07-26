@@ -3,6 +3,7 @@ mod bg;
 mod fsx;
 mod models;
 mod settings;
+mod update;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -13,6 +14,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             models::list_models,
             models::download_model,
+            models::cancel_download,
             models::delete_model,
             models::models_dir_path,
             models::models_location,
@@ -24,6 +26,7 @@ pub fn run() {
             fsx::list_dir_images,
             ai::upscale_image,
             bg::remove_background,
+            update::check_update,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

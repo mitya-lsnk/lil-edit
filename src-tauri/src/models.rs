@@ -7,7 +7,9 @@
 // pull `extras` — loose weight files that the engine ships without — into
 // <models>/<id>/models/.
 
+use std::collections::HashSet;
 use std::path::{Path, PathBuf};
+use std::sync::{Mutex, OnceLock};
 
 use futures_util::StreamExt;
 use serde::Serialize;
@@ -15,6 +17,35 @@ use tauri::{AppHandle, Emitter, Manager};
 use tokio::io::AsyncWriteExt;
 
 use crate::settings;
+
+/// Error sentinel used when a download is aborted by the user, so the wrapper
+/// can tell a cancel apart from a real failure.
+const CANCEL_MARKER: &str = "__cancelled__";
+
+/// Ids the user has asked to cancel mid-download. A download loop checks this
+/// between chunks and bails out; the id is cleared once the download unwinds.
+fn cancels() -> &'static Mutex<HashSet<String>> {
+    static C: OnceLock<Mutex<HashSet<String>>> = OnceLock::new();
+    C.get_or_init(|| Mutex::new(HashSet::new()))
+}
+
+fn cancel_requested(id: &str) -> bool {
+    cancels().lock().map(|s| s.contains(id)).unwrap_or(false)
+}
+
+fn clear_cancel(id: &str) {
+    if let Ok(mut s) = cancels().lock() {
+        s.remove(id);
+    }
+}
+
+/// Ask an in-flight download to stop. Harmless if nothing is downloading.
+#[tauri::command]
+pub fn cancel_download(id: String) {
+    if let Ok(mut s) = cancels().lock() {
+        s.insert(id);
+    }
+}
 
 /// An extra file fetched alongside an archive: (url, file name, byte size).
 pub type Extra = (&'static str, &'static str, u64);
@@ -481,6 +512,9 @@ async fn fetch_to_file(
     let mut last_emit = 0u64;
     let mut stream = resp.bytes_stream();
     while let Some(chunk) = stream.next().await {
+        if cancel_requested(id) {
+            return Err(CANCEL_MARKER.into());
+        }
         let chunk = chunk.map_err(|e| format!("stream error: {e}"))?;
         file.write_all(&chunk)
             .await
@@ -504,6 +538,18 @@ async fn fetch_to_file(
     Ok(got)
 }
 
+/// Remove any half-written files left by an aborted or failed download so the
+/// model doesn't read as installed and disk isn't left with dead .part files.
+async fn cleanup_partial(dir: &Path, spec: &ModelSpec) {
+    let tmp = dir.join(format!("{}.part", spec.file));
+    let _ = tokio::fs::remove_file(&tmp).await;
+    if spec.archive {
+        // The per-id folder holds the extraction plus any extras (and their
+        // .part files) — drop the whole thing.
+        let _ = tokio::fs::remove_dir_all(target_path(dir, spec)).await;
+    }
+}
+
 #[tauri::command]
 pub async fn download_model(app: AppHandle, id: String) -> Result<(), String> {
     let spec = REGISTRY
@@ -511,8 +557,45 @@ pub async fn download_model(app: AppHandle, id: String) -> Result<(), String> {
         .find(|s| s.id == id)
         .ok_or_else(|| format!("unknown model: {id}"))?;
 
+    // Drop any stale cancel flag from a previous run before we start.
+    clear_cancel(&id);
     let dir = models_dir(&app)?;
-    tokio::fs::create_dir_all(&dir)
+
+    let res = download_inner(&app, spec, &dir, &id).await;
+    match res {
+        Ok(()) => {
+            clear_cancel(&id);
+            Ok(())
+        }
+        Err(e) => {
+            cleanup_partial(&dir, spec).await;
+            clear_cancel(&id);
+            if e == CANCEL_MARKER {
+                // Tell the UI to drop the progress bar; not an error to surface.
+                let _ = app.emit(
+                    "model:progress",
+                    Progress {
+                        id: id.clone(),
+                        downloaded: 0,
+                        total: 0,
+                        phase: "cancelled".into(),
+                    },
+                );
+                Ok(())
+            } else {
+                Err(e)
+            }
+        }
+    }
+}
+
+async fn download_inner(
+    app: &AppHandle,
+    spec: &ModelSpec,
+    dir: &Path,
+    id: &str,
+) -> Result<(), String> {
+    tokio::fs::create_dir_all(dir)
         .await
         .map_err(|e| format!("mkdir failed: {e}"))?;
 
@@ -525,20 +608,20 @@ pub async fn download_model(app: AppHandle, id: String) -> Result<(), String> {
     let grand_total = spec.bytes + extras_bytes;
 
     let tmp = dir.join(format!("{}.part", spec.file));
-    let got = fetch_to_file(&app, &client, &id, spec.url, &tmp, 0, grand_total).await?;
+    let got = fetch_to_file(app, &client, id, spec.url, &tmp, 0, grand_total).await?;
     let mut done = got;
 
     if spec.archive {
         let _ = app.emit(
             "model:progress",
             Progress {
-                id: id.clone(),
+                id: id.to_string(),
                 downloaded: done.min(grand_total),
                 total: grand_total,
                 phase: "extract".into(),
             },
         );
-        let out_dir = target_path(&dir, spec);
+        let out_dir = target_path(dir, spec);
         let tmp_clone = tmp.clone();
         let out_clone = out_dir.clone();
         // zip crate is sync; run on a blocking thread.
@@ -549,7 +632,7 @@ pub async fn download_model(app: AppHandle, id: String) -> Result<(), String> {
         let _ = tokio::fs::remove_file(&tmp).await;
 
         if !spec.extras.is_empty() {
-            let ex_dir = extras_dir(&dir, spec);
+            let ex_dir = extras_dir(dir, spec);
             tokio::fs::create_dir_all(&ex_dir)
                 .await
                 .map_err(|e| format!("mkdir failed: {e}"))?;
@@ -558,7 +641,7 @@ pub async fn download_model(app: AppHandle, id: String) -> Result<(), String> {
                 // run leaves a .part behind instead of a truncated weight file
                 // that would read as installed.
                 let part = ex_dir.join(format!("{name}.part"));
-                let n = fetch_to_file(&app, &client, &id, url, &part, done, grand_total).await?;
+                let n = fetch_to_file(app, &client, id, url, &part, done, grand_total).await?;
                 tokio::fs::rename(&part, ex_dir.join(name))
                     .await
                     .map_err(|e| format!("rename failed: {e}"))?;
@@ -575,7 +658,7 @@ pub async fn download_model(app: AppHandle, id: String) -> Result<(), String> {
     let _ = app.emit(
         "model:progress",
         Progress {
-            id: id.clone(),
+            id: id.to_string(),
             downloaded: grand_total,
             total: grand_total,
             phase: "done".into(),

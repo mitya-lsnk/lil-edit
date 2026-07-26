@@ -45,6 +45,10 @@
   --font-jp: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic",
     "Noto Sans JP", sans-serif;
 
+  /* --- control sizing (shared so bars line up by function, not by skin) --- */
+  --ctl-h: 40px; /* form controls inside tool bars */
+  --ctl-h-head: 34px; /* header controls */
+
   /* --- borders / radius / shadow --- */
   --bd-w: 3px;
   --bd: var(--bd-w) solid var(--line);
@@ -154,7 +158,9 @@ body {
   font-family: var(--font-mono);
   font-weight: 700;
   font-size: 12px;
-  background: var(--ink);
+  /* --screen is dark in every mode, so accent text stays legible; var(--ink)
+     flips light in dark mode and washed the accent out. */
+  background: var(--screen);
   color: var(--accent);
   padding: 6px 10px;
   border-radius: var(--radius-sm);

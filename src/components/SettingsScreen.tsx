@@ -3,7 +3,6 @@ import { openUrl } from "@tauri-apps/plugin-opener";
 import { open } from "@tauri-apps/plugin-dialog";
 import { SKINS, useSkin } from "../lib/skin";
 import { ModelManager } from "./ModelManager";
-import { ModeToggle } from "./ModeToggle";
 import {
   cacheInfo,
   clearCache,
@@ -14,9 +13,25 @@ import {
 } from "../lib/models";
 import { formatBytes } from "../lib/format";
 import { hasTauri } from "../lib/tauri";
+import type { UpdateInfo } from "../lib/update";
 import { useStrings } from "../lib/i18n";
 
-export function SettingsScreen({ onOpenModels }: { onOpenModels: () => void }) {
+interface SettingsProps {
+  onOpenModels: () => void;
+  /** Latest-release info from the startup check (null until it resolves). */
+  update: UpdateInfo | null;
+  checking: boolean;
+  checkFailed: boolean;
+  onCheck: () => void;
+}
+
+export function SettingsScreen({
+  onOpenModels,
+  update,
+  checking,
+  checkFailed,
+  onCheck,
+}: SettingsProps) {
   const str = useStrings();
   const { skin, setSkin } = useSkin();
   const [cache, setCache] = useState<CacheInfo | null>(null);
@@ -83,10 +98,6 @@ export function SettingsScreen({ onOpenModels }: { onOpenModels: () => void }) {
       <section className="set-sec">
         <h3 className="set-h">{str.settings.appearance}</h3>
         <p className="set-lead">{str.settings.appearanceLead}</p>
-        <div className="set-mode">
-          <span className="set-loc-lbl">{str.settings.theme}</span>
-          <ModeToggle />
-        </div>
         <div className="skin-grid">
           {SKINS.map((sk) => {
             const meta = str.skins[sk.id];
@@ -245,6 +256,49 @@ export function SettingsScreen({ onOpenModels }: { onOpenModels: () => void }) {
       <section className="set-sec">
         <h3 className="set-h">{str.settings.aboutTitle}</h3>
         {str.settings.about}
+        <p className="set-version">
+          {str.settings.version} {__APP_VERSION__}
+        </p>
+
+        {tauri && (
+          <div className="set-update">
+            <button className="b-btn" onClick={onCheck} disabled={checking}>
+              {checking ? str.settings.update.checking : str.settings.update.check}
+            </button>
+
+            {!checking && checkFailed && (
+              <span className="set-update-msg">{str.settings.update.failed}</span>
+            )}
+            {!checking && !checkFailed && update && !update.available && (
+              <span className="set-update-msg">{str.settings.update.upToDate}</span>
+            )}
+
+            {!checking && update?.available && (
+              <div className="set-update-card">
+                <div className="set-update-head">
+                  <span className="b-badge">{str.settings.update.available(update.latest)}</span>
+                </div>
+                {update.notes && (
+                  <details className="set-update-notes">
+                    <summary>{str.settings.update.whatsNew}</summary>
+                    <pre>{update.notes}</pre>
+                  </details>
+                )}
+                <div className="set-update-actions">
+                  <button
+                    className="b-btn b-btn--yellow"
+                    onClick={() => openUrl(update.asset ?? update.url)}
+                  >
+                    {str.settings.update.download}
+                  </button>
+                  <button className="b-link" onClick={() => openUrl(update.url)}>
+                    {str.settings.update.releasePage}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </section>
     </div>
   );

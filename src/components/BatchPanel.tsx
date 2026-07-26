@@ -6,6 +6,7 @@ import { listModels, type ModelStatus } from "../lib/models";
 import { ENGINES, DENOISE } from "../lib/engines";
 import { FORMAT_META, type OutputFormat } from "../lib/compress";
 import {
+  clearPaths,
   listFolderImages,
   loadPaths,
   loadSettings,
@@ -36,7 +37,9 @@ export function BatchPanel() {
   function patchPaths(p: Partial<BatchPaths>) {
     setPathsState((prev) => {
       const next = { ...prev, ...p };
-      savePaths(next);
+      // Only persist when the user asked us to remember.
+      if (next.remember) savePaths(next);
+      else clearPaths();
       return next;
     });
   }
@@ -82,8 +85,9 @@ export function BatchPanel() {
   async function pickSource() {
     const d = await open({ directory: true, multiple: false });
     if (typeof d !== "string") return;
-    // When "remember" is off, the destination mirrors the source.
-    patchPaths(paths.remember ? { source: d } : { source: d, dest: d });
+    // Convenience only: fill an empty destination with the source. A dest the
+    // user already chose is left untouched.
+    patchPaths(paths.dest ? { source: d } : { source: d, dest: d });
     refreshFiles(d);
   }
   async function pickDest() {
@@ -91,8 +95,7 @@ export function BatchPanel() {
     if (typeof d === "string") patchPaths({ dest: d });
   }
   function onRemember(checked: boolean) {
-    // Turning it off re-mirrors the destination onto the current source.
-    patchPaths(checked ? { remember: true } : { remember: false, dest: paths.source });
+    patchPaths({ remember: checked });
   }
 
   // Upscale engine/model resolution — same rules as the single-image panel.
@@ -152,7 +155,7 @@ export function BatchPanel() {
             placeholder={s.batch.sourcePh}
             onChange={(e) => {
               const v = e.target.value;
-              patchPaths(paths.remember ? { source: v } : { source: v, dest: v });
+              patchPaths(paths.dest ? { source: v } : { source: v, dest: v });
             }}
             onBlur={() => refreshFiles(paths.source)}
           />
@@ -164,10 +167,9 @@ export function BatchPanel() {
             className="batch-path"
             value={paths.dest}
             placeholder={s.batch.destPh}
-            disabled={!paths.remember}
             onChange={(e) => patchPaths({ dest: e.target.value })}
           />
-          <button className="b-btn" onClick={pickDest} disabled={!paths.remember}>
+          <button className="b-btn" onClick={pickDest}>
             {s.batch.pickFolder}
           </button>
           <label className="t-check edit-lock batch-remember">

@@ -1,12 +1,23 @@
+import { readFileSync } from "node:fs";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
 // @ts-expect-error process is a nodejs global
 const host = process.env.TAURI_DEV_HOST;
 
+// Single source of truth for the version shown in-app — read from package.json
+// so it always matches the tag/build.
+const pkgVersion = JSON.parse(
+  readFileSync(new URL("./package.json", import.meta.url), "utf-8"),
+).version as string;
+
 // https://vite.dev/config/
 export default defineConfig(async () => ({
   plugins: [react()],
+
+  define: {
+    __APP_VERSION__: JSON.stringify(pkgVersion),
+  },
 
   // jSquash's multithreaded codecs spawn ES-module workers.
   worker: {

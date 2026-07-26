@@ -19,7 +19,7 @@ export interface ModelProgress {
   id: string;
   downloaded: number;
   total: number;
-  phase: "download" | "extract" | "done";
+  phase: "download" | "extract" | "done" | "cancelled";
 }
 
 export function listModels(): Promise<ModelStatus[]> {
@@ -28,6 +28,11 @@ export function listModels(): Promise<ModelStatus[]> {
 
 export function downloadModel(id: string): Promise<void> {
   return invoke("download_model", { id });
+}
+
+/** Ask an in-flight download to stop; temp files are cleaned up by the backend. */
+export function cancelDownload(id: string): Promise<void> {
+  return invoke("cancel_download", { id });
 }
 
 export function deleteModel(id: string): Promise<void> {

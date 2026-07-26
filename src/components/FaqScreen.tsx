@@ -26,6 +26,11 @@ export function FaqScreen() {
       <p className="faq-lead">{s.faq.lead}</p>
 
       <section className="faq-sec">
+        <h3>{s.faq.typesTitle}</h3>
+        {s.faq.types}
+      </section>
+
+      <section className="faq-sec">
         <h3>{s.faq.bgTitle}</h3>
         <div className="faq-table">
           <div className="faq-row faq-head">

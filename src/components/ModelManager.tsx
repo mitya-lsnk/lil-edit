@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import {
+  cancelDownload,
   deleteModel,
   downloadModel,
   listModels,
@@ -43,16 +44,19 @@ export function ModelManager({ filter, onChanged }: Props) {
         ...prev,
         [p.id]: { downloaded: p.downloaded, total: p.total, phase: p.phase },
       }));
-      if (p.phase === "done") {
-        setTimeout(() => {
-          setProgress((prev) => {
-            const next = { ...prev };
-            delete next[p.id];
-            return next;
-          });
-          refresh();
-          onChanged?.();
-        }, 400);
+      if (p.phase === "done" || p.phase === "cancelled") {
+        setTimeout(
+          () => {
+            setProgress((prev) => {
+              const next = { ...prev };
+              delete next[p.id];
+              return next;
+            });
+            refresh();
+            onChanged?.();
+          },
+          p.phase === "cancelled" ? 0 : 400,
+        );
       }
     });
     return () => {
@@ -76,6 +80,19 @@ export function ModelManager({ filter, onChanged }: Props) {
         delete next[id];
         return next;
       });
+    }
+  }
+
+  async function handleCancel(id: string) {
+    // Mark the row as winding down so the button can't be hit twice; the
+    // backend emits a "cancelled" event that clears the bar and cleans temp files.
+    setProgress((prev) =>
+      prev[id] ? { ...prev, [id]: { ...prev[id], phase: "cancelling" } } : prev,
+    );
+    try {
+      await cancelDownload(id);
+    } catch (e) {
+      setError(String(e));
     }
   }
 
@@ -119,13 +136,20 @@ export function ModelManager({ filter, onChanged }: Props) {
                   <button className="b-btn" onClick={() => handleDelete(m.id)}>
                     {s.models.delete}
                   </button>
+                ) : downloading ? (
+                  <button
+                    className="b-btn"
+                    disabled={p.phase === "cancelling"}
+                    onClick={() => handleCancel(m.id)}
+                  >
+                    {p.phase === "cancelling" ? s.models.cancelling : s.models.cancel}
+                  </button>
                 ) : (
                   <button
                     className="b-btn b-btn--solid"
-                    disabled={downloading}
                     onClick={() => handleDownload(m.id)}
                   >
-                    {downloading ? "…" : s.models.download}
+                    {s.models.download}
                   </button>
                 )}
               </div>
@@ -139,11 +163,13 @@ export function ModelManager({ filter, onChanged }: Props) {
                   style={{ width: `${Math.round(frac * 100)}%` }}
                 />
                 <span className="m-progress-label">
-                  {p.phase === "extract"
-                    ? s.models.extract
-                    : p.phase === "done"
-                      ? s.models.done
-                      : `${formatBytes(p.downloaded)} / ${formatBytes(p.total)}`}
+                  {p.phase === "cancelling"
+                    ? s.models.cancelling
+                    : p.phase === "extract"
+                      ? s.models.extract
+                      : p.phase === "done"
+                        ? s.models.done
+                        : `${formatBytes(p.downloaded)} / ${formatBytes(p.total)}`}
                 </span>
               </div>
             )}

@@ -12,6 +12,8 @@ import {
 } from "../lib/edit";
 import { saveBytes } from "../lib/save";
 import { PipeButtons } from "./PipeButtons";
+import { MattePicker } from "./MattePicker";
+import { type Matte, matteStyle } from "../lib/matteBg";
 import type { Tool } from "./HomeScreen";
 import { useStrings } from "../lib/i18n";
 
@@ -61,6 +63,8 @@ export function EditPanel({ file, srcDir, onSendTo, onSaved }: Props) {
 
   // Resize controls. Fields are strings so they can be emptied while typing
   // (a plain number field snaps a cleared box back to 0).
+  // Preview backdrop, like Remove BG. Default "theme" = show the theme colour.
+  const [matte, setMatte] = useState<Matte>("theme");
   const [unit, setUnit] = useState<"px" | "pct">("px");
   const [wField, setWField] = useState("");
   const [hField, setHField] = useState("");
@@ -282,6 +286,9 @@ export function EditPanel({ file, srcDir, onSendTo, onSaved }: Props) {
       const nx = clamp(d.rect.x + (px - d.spx), 0, 1 - d.rect.w);
       const ny = clamp(d.rect.y + (py - d.spy), 0, 1 - d.rect.h);
       setCrop({ ...d.rect, x: nx, y: ny });
+    } else if (d.mode.length === 1) {
+      // Single-axis edge handles (n/s/e/w) — free crop only.
+      setCrop(resizeEdge(d.rect, d.mode, px, py));
     } else {
       setCrop(resizeCorner(d.rect, d.mode, px, py, aspectRef.current));
     }
@@ -301,103 +308,114 @@ export function EditPanel({ file, srcDir, onSendTo, onSaved }: Props) {
 
   return (
     <div className="edit-panel">
-      {/* ---------- toolbar: rotate / flip / history ---------- */}
-      <div className="t-controls edit-bar">
-        <div className="edit-ops">
-          <button className="b-btn edit-icn" title={s.edit.rotateL} onClick={() => doRotate(-90)}>↺</button>
-          <button className="b-btn edit-icn" title={s.edit.rotateR} onClick={() => doRotate(90)}>↻</button>
-          <button className="b-btn edit-icn" title={s.edit.flipH} onClick={() => doFlip("h")}>⇋</button>
-          <button className="b-btn edit-icn" title={s.edit.flipV} onClick={() => doFlip("v")}>⥯</button>
-        </div>
-        <span className="edit-dims">{outW} × {outH}</span>
-        <span className="head-spacer" style={{ flex: 1 }} />
-        <div className="edit-ops">
+      {cropping ? (
+        /* ---------- crop: one merged block ---------- */
+        <div className="t-controls edit-crop-merged">
+          <div className="edit-ops">
+            <button className="b-btn edit-icn" title={s.edit.rotateL} onClick={() => doRotate(-90)}>↺</button>
+            <button className="b-btn edit-icn" title={s.edit.rotateR} onClick={() => doRotate(90)}>↻</button>
+            <button className="b-btn edit-icn" title={s.edit.flipH} onClick={() => doFlip("h")}>⇋</button>
+            <button className="b-btn edit-icn" title={s.edit.flipV} onClick={() => doFlip("v")}>⥯</button>
+          </div>
+          <div className="edit-ratios">
+            {RATIOS.map((rt) => (
+              <button
+                key={rt.key}
+                className={ratioKey === rt.key ? "active" : ""}
+                onClick={() => chooseRatio(rt.key, rt.r)}
+              >
+                {rt.key === "free" ? s.edit.free : rt.key}
+              </button>
+            ))}
+          </div>
+          <input
+            className={`t-num edit-custom ${ratioKey === "custom" ? "active" : ""}`}
+            placeholder="16:9"
+            value={customStr}
+            onFocus={(e) => e.currentTarget.select()}
+            onChange={(e) => onCustom(e.target.value)}
+          />
+          <span className="edit-dims">{outW} × {outH}</span>
+          <MattePicker value={matte} onChange={setMatte} />
+          <span className="head-spacer" style={{ flex: 1 }} />
           <button className="b-btn edit-icn" title={s.edit.undo} disabled={!canUndo} onClick={undo}>⟲</button>
           <button className="b-btn edit-icn" title={s.edit.redo} disabled={!canRedo} onClick={redo}>⟳</button>
-          <button className="b-btn" disabled={!canUndo} onClick={reset}>{s.edit.reset}</button>
-        </div>
-      </div>
-
-      {/* ---------- crop OR resize controls ---------- */}
-      {cropping ? (
-        <div className="t-controls edit-crop-bar">
-          <div className="t-field">
-            <span className="t-label">{s.edit.ratio}</span>
-            <div className="edit-ratios">
-              {RATIOS.map((rt) => (
-                <button
-                  key={rt.key}
-                  className={ratioKey === rt.key ? "active" : ""}
-                  onClick={() => chooseRatio(rt.key, rt.r)}
-                >
-                  {rt.key === "free" ? s.edit.free : rt.key}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="edit-num">
-            <span className="t-label">{s.edit.custom}</span>
-            <input
-              className={`t-num edit-custom ${ratioKey === "custom" ? "active" : ""}`}
-              placeholder="16:9"
-              value={customStr}
-              onFocus={(e) => e.currentTarget.select()}
-              onChange={(e) => onCustom(e.target.value)}
-            />
-          </div>
-          <span className="head-spacer" style={{ flex: 1 }} />
           <button className="b-btn" onClick={() => setCropping(false)}>{s.edit.cancel}</button>
           <button className="b-btn b-btn--solid" onClick={applyCrop}>{s.edit.apply}</button>
         </div>
       ) : (
-        <div className="t-controls edit-resize-bar">
-          <div className="t-seg edit-unit">
-            <button className={unit === "px" ? "active" : ""} onClick={() => setUnit("px")}>{s.edit.unitPx}</button>
-            <button className={unit === "pct" ? "active" : ""} onClick={() => setUnit("pct")}>{s.edit.unitPct}</button>
+        /* ---------- default: toolbar + resize ---------- */
+        <>
+          <div className="t-controls edit-bar">
+            <div className="edit-ops">
+              <button className="b-btn edit-icn" title={s.edit.rotateL} onClick={() => doRotate(-90)}>↺</button>
+              <button className="b-btn edit-icn" title={s.edit.rotateR} onClick={() => doRotate(90)}>↻</button>
+              <button className="b-btn edit-icn" title={s.edit.flipH} onClick={() => doFlip("h")}>⇋</button>
+              <button className="b-btn edit-icn" title={s.edit.flipV} onClick={() => doFlip("v")}>⥯</button>
+            </div>
+            <span className="edit-dims">{outW} × {outH}</span>
+            <MattePicker value={matte} onChange={setMatte} />
+            <span className="head-spacer" style={{ flex: 1 }} />
+            <div className="edit-ops">
+              <button className="b-btn edit-icn" title={s.edit.undo} disabled={!canUndo} onClick={undo}>⟲</button>
+              <button className="b-btn edit-icn" title={s.edit.redo} disabled={!canRedo} onClick={redo}>⟳</button>
+              <button className="b-btn" disabled={!canUndo} onClick={reset}>{s.edit.reset}</button>
+            </div>
           </div>
 
-          {unit === "px" ? (
-            <>
-              <label className="edit-num">
-                <span className="t-label">{s.edit.width}</span>
-                <input className="t-num" type="number" min={1} value={wField}
-                  onFocus={(e) => e.currentTarget.select()}
-                  onChange={(e) => onWidth(e.target.value)} />
-              </label>
-              <span className="edit-x">×</span>
-              <label className="edit-num">
-                <span className="t-label">{s.edit.height}</span>
-                <input className="t-num" type="number" min={1} value={hField}
-                  onFocus={(e) => e.currentTarget.select()}
-                  onChange={(e) => onHeight(e.target.value)} />
-              </label>
-              <label className="t-check edit-lock">
-                <input type="checkbox" checked={lockRatio} onChange={(e) => setLockRatio(e.target.checked)} />
-                {s.edit.lock}
-              </label>
-            </>
-          ) : (
-            <label className="edit-num">
-              <span className="t-label">{s.edit.percent} · {pctField || 0}%</span>
-              <input className="t-num" type="number" min={1} max={1000} value={pctField}
-                onFocus={(e) => e.currentTarget.select()}
-                onChange={(e) => setPctField(e.target.value)} />
-            </label>
-          )}
+          <div className="t-controls edit-resize-bar">
+            <div className="t-seg edit-unit">
+              <button className={unit === "px" ? "active" : ""} onClick={() => setUnit("px")}>{s.edit.unitPx}</button>
+              <button className={unit === "pct" ? "active" : ""} onClick={() => setUnit("pct")}>{s.edit.unitPct}</button>
+            </div>
 
-          <span className="head-spacer" style={{ flex: 1 }} />
-          <button className="b-btn" onClick={startCrop}>✂ {s.edit.crop}</button>
-          <button className="b-btn b-btn--solid" onClick={applyResize}>{s.edit.applyResize}</button>
-        </div>
+            {unit === "px" ? (
+              <>
+                <label className="edit-num">
+                  <span className="t-label">{s.edit.width}</span>
+                  <input className="t-num" type="number" min={1} value={wField}
+                    onFocus={(e) => e.currentTarget.select()}
+                    onChange={(e) => onWidth(e.target.value)} />
+                </label>
+                <span className="edit-x">×</span>
+                <label className="edit-num">
+                  <span className="t-label">{s.edit.height}</span>
+                  <input className="t-num" type="number" min={1} value={hField}
+                    onFocus={(e) => e.currentTarget.select()}
+                    onChange={(e) => onHeight(e.target.value)} />
+                </label>
+                <label className="t-check edit-lock">
+                  <input type="checkbox" checked={lockRatio} onChange={(e) => setLockRatio(e.target.checked)} />
+                  {s.edit.lock}
+                </label>
+              </>
+            ) : (
+              <label className="edit-num">
+                <span className="t-label">{s.edit.percent} · {pctField || 0}%</span>
+                <input className="t-num" type="number" min={1} max={1000} value={pctField}
+                  onFocus={(e) => e.currentTarget.select()}
+                  onChange={(e) => setPctField(e.target.value)} />
+              </label>
+            )}
+
+            <span className="head-spacer" style={{ flex: 1 }} />
+            <button className="b-btn" onClick={startCrop}>✂ {s.edit.crop}</button>
+            <button className="b-btn b-btn--solid" onClick={applyResize}>{s.edit.applyResize}</button>
+          </div>
+        </>
       )}
 
       {error && <div className="b-error">{error}</div>}
 
       {/* ---------- preview + crop overlay ---------- */}
-      <div className="edit-stage" ref={stageRef}>
+      <div
+        className="edit-stage"
+        style={matteStyle(matte)}
+        ref={stageRef}
+      >
         <div
-          className="edit-canvas-wrap b-checker"
-          style={{ width: dispW, height: dispH }}
+          className="edit-canvas-wrap"
+          style={{ width: dispW, height: dispH, ...matteStyle(matte) }}
         >
           {previewUrl && <img src={previewUrl} alt="" draggable={false} style={{ width: "100%", height: "100%" }} />}
 
@@ -426,6 +444,17 @@ export function EditPanel({ file, srcDir, onSendTo, onSaved }: Props) {
                     {...dragProps}
                   />
                 ))}
+                {/* Edge-midpoint handles — free crop only (they'd break a locked
+                    aspect ratio). */}
+                {ratioKey === "free" &&
+                  (["n", "s", "e", "w"] as const).map((c) => (
+                    <span
+                      key={c}
+                      className={`crop-handle edge ${c}`}
+                      onPointerDown={(e) => onDown(e, c)}
+                      {...dragProps}
+                    />
+                  ))}
               </div>
             </>
           )}
@@ -457,6 +486,30 @@ export function EditPanel({ file, srcDir, onSendTo, onSaved }: Props) {
     const base = file.name.replace(/\.[^.]+$/, "");
     onSendTo(await canvasToPngFile(cur, `${base}-edit.png`), tool);
   }
+}
+
+// Resize a crop rect by dragging one edge midpoint (free crop, single axis).
+function resizeEdge(
+  r: CropRect,
+  mode: string,
+  px: number,
+  py: number,
+): CropRect {
+  let { x, y, w, h } = r;
+  if (mode === "n") {
+    const bottom = y + h;
+    y = clamp(py, 0, bottom - MIN_CROP);
+    h = bottom - y;
+  } else if (mode === "s") {
+    h = clamp(py, y + MIN_CROP, 1) - y;
+  } else if (mode === "w") {
+    const right = x + w;
+    x = clamp(px, 0, right - MIN_CROP);
+    w = right - x;
+  } else if (mode === "e") {
+    w = clamp(px, x + MIN_CROP, 1) - x;
+  }
+  return { x, y, w, h };
 }
 
 // Resize a crop rect by dragging one corner; the opposite corner stays anchored.
