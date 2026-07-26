@@ -815,8 +815,13 @@
   z-index: 100;
   display: flex;
   align-items: center;
-  gap: 18px;
-  max-width: min(520px, calc(100vw - 48px));
+  justify-content: space-between;
+  gap: 14px 18px;
+  /* The action buttons are flex:none, so on a narrow toast they used to squeeze
+     the text block to zero width and it vanished. Allow wrapping and give the
+     toast room, so the "saved / filename" text always keeps its floor. */
+  flex-wrap: wrap;
+  max-width: min(640px, calc(100vw - 48px));
   padding: 14px 16px;
   background: var(--surface);
   border: var(--bd);
@@ -833,7 +838,10 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  min-width: 0;
+  /* Grow to fill, but never shrink below a readable floor (the filename
+     ellipsises inside this). */
+  flex: 1 1 200px;
+  min-width: 180px;
 }
 .toast-check {
   flex: none;

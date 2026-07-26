@@ -25,3 +25,7 @@ graphify-out
 *.njsproj
 *.sln
 *.sw?
+
+# Mobile icon sets (desktop-only app; regenerable via `tauri icon`)
+src-tauri/icons/android/
+src-tauri/icons/ios/
