@@ -141,6 +141,61 @@
 }
 
 /* =====================================================================
+   LIL STUDIO — dark: near-black warm paper, cream ink, vermilion + green
+   LED brighten, film grain flips to screen blend.
+   ===================================================================== */
+[data-mode="dark"][data-skin="studio"] {
+  --paper: #100f0c;
+  --surface: #191712;
+  --surface-2: #141210;
+  --screen: #0b0a08;
+  --screen-ink: #f1efe4;
+
+  --ink: #f1efe4;
+  --line: #3a362c;
+  --muted: #8d897c;
+
+  --accent: #ff5a1f;
+  --accent-ink: #120c07;
+  --accent-2: #ff5da2;
+  --accent-2-ink: #120c07;
+  --accent-3: #3ee06a;
+  --accent-3-ink: #08210f;
+  --ok: #3ee06a;
+  --danger: #ff5da2;
+
+  --shadow: 5px 5px 0 rgba(0, 0, 0, 0.4);
+  --shadow-sm: 3px 3px 0 rgba(0, 0, 0, 0.35);
+  --shadow-lg: 8px 8px 0 rgba(0, 0, 0, 0.5);
+}
+/* dark header plate */
+[data-mode="dark"][data-skin="studio"] .app-header {
+  background: #16130e;
+  border-bottom-color: var(--line);
+}
+/* grain: a dark ink line is invisible, so blend the grain as light instead */
+[data-mode="dark"][data-skin="studio"] .app-shell::after {
+  mix-blend-mode: screen;
+  opacity: 0.06;
+}
+/* pressable button lip: the ink line vanishes on a dark surface — use black,
+   and keep the sink on hover/press (the shared dark rule drops btn shadows) */
+[data-mode="dark"][data-skin="studio"] .b-btn {
+  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.5);
+}
+[data-mode="dark"][data-skin="studio"] .b-btn:hover {
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.5);
+  transform: translateY(1px);
+}
+[data-mode="dark"][data-skin="studio"] .b-btn:active {
+  box-shadow: 0 0 0 rgba(0, 0, 0, 0.5);
+  transform: translateY(4px);
+}
+[data-mode="dark"][data-skin="studio"] .b-btn:disabled {
+  box-shadow: none;
+}
+
+/* =====================================================================
    Shared dark fixes — surfaces the default (brutalist) rules paint with a
    literal light value or with var(--ink) assuming ink is dark. These aren't
    re-skinned per skin, so remap them for every dark skin. background-color

@@ -114,7 +114,6 @@ export function SettingsScreen({
                   }}
                 />
                 <span className="skin-card-name">{meta.name}</span>
-                <span className="skin-card-tag">{meta.tagline}</span>
                 {skin === sk.id && (
                   <span className="skin-card-on">{str.settings.chosen}</span>
                 )}

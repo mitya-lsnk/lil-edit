@@ -6,7 +6,7 @@ import {
   type ReactNode,
 } from "react";
 
-export type Skin = "brutal" | "riso" | "te";
+export type Skin = "brutal" | "riso" | "te" | "studio";
 export type Mode = "light" | "dark";
 
 export interface SkinMeta {
@@ -17,7 +17,9 @@ export interface SkinMeta {
 
 // Names and taglines are localized — see the `skins` block in strings.tsx,
 // keyed by id. Here we only keep what doesn't translate: the id and swatches.
+// studio is the default — listed first, and the fallback when nothing is stored.
 export const SKINS: SkinMeta[] = [
+  { id: "studio", swatch: ["#ff3d0d", "#2fbf4c"] },
   { id: "brutal", swatch: ["#ffde00", "#111111"] },
   { id: "riso", swatch: ["#ea3a0c", "#2233c4"] },
   { id: "te", swatch: ["#fa4b00", "#15150f"] },
@@ -28,7 +30,7 @@ const LEGACY_KEY = "blopimage.skin"; // pre-rename; migrated on first read
 const MODE_KEY = "lilimage.mode";
 
 function isSkin(v: unknown): v is Skin {
-  return v === "brutal" || v === "riso" || v === "te";
+  return v === "brutal" || v === "riso" || v === "te" || v === "studio";
 }
 function isMode(v: unknown): v is Mode {
   return v === "light" || v === "dark";
@@ -41,7 +43,7 @@ function readInitial(): Skin {
     const legacy = localStorage.getItem(LEGACY_KEY);
     if (isSkin(legacy)) return legacy; // carry the pre-rename choice over
   }
-  return "brutal";
+  return "studio";
 }
 
 // No stored choice → follow the OS. Once the user toggles, we persist and stop
@@ -69,7 +71,7 @@ interface SkinCtx {
 }
 
 const Ctx = createContext<SkinCtx>({
-  skin: "brutal",
+  skin: "studio",
   setSkin: () => {},
   mode: "light",
   setMode: () => {},

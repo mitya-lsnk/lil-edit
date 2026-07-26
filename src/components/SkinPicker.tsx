@@ -14,7 +14,7 @@ export function SkinPicker() {
             key={sk.id}
             className={`skin-chip ${skin === sk.id ? "active" : ""}`}
             onClick={() => setSkin(sk.id)}
-            title={`${meta.name} — ${meta.tagline}`}
+            title={meta.name}
             aria-pressed={skin === sk.id}
           >
             <span

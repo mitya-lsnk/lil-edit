@@ -264,9 +264,10 @@ const ru = {
     },
   },
   skins: {
-    brutal: { name: "Нео-брутализм", tagline: "жёсткие рамки, тени, жёлтый" },
-    riso: { name: "Рисо-поп", tagline: "японский ризограф, полутон" },
-    te: { name: "TE Hardware", tagline: "приборная панель, скругления" },
+    brutal: { name: "Нео-брутализм" },
+    riso: { name: "Рисо-поп" },
+    te: { name: "Девайс" },
+    studio: { name: "lil studio" },
   },
   mode: {
     toLightTitle: "Светлая тема",
@@ -636,9 +637,10 @@ const en: Dict = {
     },
   },
   skins: {
-    brutal: { name: "Neo-brutalism", tagline: "hard borders, shadows, yellow" },
-    riso: { name: "Riso-pop", tagline: "Japanese risograph, halftone" },
-    te: { name: "TE Hardware", tagline: "instrument panel, rounded" },
+    brutal: { name: "Neo-brutalism" },
+    riso: { name: "Riso-pop" },
+    te: { name: "Device" },
+    studio: { name: "lil studio" },
   },
   mode: {
     toLightTitle: "Light theme",

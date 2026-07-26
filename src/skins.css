@@ -492,21 +492,25 @@
    Tool switcher — light-header skins need ink-on-paper, not white-on-black
    ===================================================================== */
 [data-skin="riso"] .app-header .tool-switch,
-[data-skin="te"] .app-header .tool-switch {
+[data-skin="te"] .app-header .tool-switch,
+[data-skin="studio"] .app-header .tool-switch {
   border-color: var(--line);
 }
 [data-skin="riso"] .app-header .tool-switch button,
-[data-skin="te"] .app-header .tool-switch button {
+[data-skin="te"] .app-header .tool-switch button,
+[data-skin="studio"] .app-header .tool-switch button {
   color: var(--ink);
   border-right-color: var(--line);
 }
 [data-skin="riso"] .app-header .tool-switch button.active,
-[data-skin="te"] .app-header .tool-switch button.active {
+[data-skin="te"] .app-header .tool-switch button.active,
+[data-skin="studio"] .app-header .tool-switch button.active {
   background: var(--accent);
   color: var(--accent-ink);
 }
 [data-skin="riso"] .app-header .tool-switch button:hover:not(.active):not(:disabled),
-[data-skin="te"] .app-header .tool-switch button:hover:not(.active):not(:disabled) {
+[data-skin="te"] .app-header .tool-switch button:hover:not(.active):not(:disabled),
+[data-skin="studio"] .app-header .tool-switch button:hover:not(.active):not(:disabled) {
   background: rgba(0, 0, 0, 0.06);
 }
 [data-skin="te"] .app-header .tool-switch button {
@@ -595,4 +599,249 @@
 /* the mode/segment controls read as inked chips */
 [data-skin="riso"] .cmp-bar {
   background: var(--ink);
+}
+
+/* =====================================================================
+   SKIN: LIL STUDIO  (warm paper, vermilion, green LED, film grain and
+   pressable hardware buttons — the lil.software catalog look)
+   ===================================================================== */
+[data-skin="studio"] {
+  --paper: #e7e4da;
+  --surface: #f3f1e9;
+  --surface-2: #ebe8de;
+  --screen: #17150f;
+  --screen-ink: #f3f1e9;
+
+  --ink: #17150f;
+  --line: #17150f;
+  --muted: #6c6a5f;
+
+  --accent: #ff3d0d; /* vermilion */
+  --accent-ink: #ffffff;
+  --accent-2: #ff4f9a; /* cute pink */
+  --accent-2-ink: #ffffff;
+  --accent-3: #2fbf4c; /* LED green */
+  --accent-3-ink: #08210f;
+  --ok: #2fbf4c;
+  --warn: #ffb000;
+  --danger: #ff4f9a;
+
+  --font-display: "Archivo", "Space Grotesk", system-ui, sans-serif;
+  --font-head: "Archivo", "Space Grotesk", system-ui, sans-serif;
+
+  --bd-w: 1.5px;
+  --radius: 14px;
+  --radius-sm: 9px;
+  --radius-pill: 999px;
+  --shadow: 5px 5px 0 rgba(23, 21, 15, 0.16);
+  --shadow-sm: 3px 3px 0 rgba(23, 21, 15, 0.14);
+  --shadow-lg: 8px 8px 0 rgba(23, 21, 15, 0.18);
+
+  --dur: 0.12s;
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+  --hover-lift: none;
+}
+
+/* film-grain overlay across the whole app — the signature texture */
+[data-skin="studio"] .app-shell::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  opacity: 0.05;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* clean grotesque headings, not the all-caps display face */
+[data-skin="studio"] .tool-card .tname,
+[data-skin="studio"] .home-drop .dz-title,
+[data-skin="studio"] .app-header .logo,
+[data-skin="studio"] .app-header .title-mid,
+[data-skin="studio"] .faq-h,
+[data-skin="studio"] .tool-head {
+  font-family: var(--font-head);
+  font-weight: 700;
+  letter-spacing: -0.2px;
+  text-shadow: none;
+}
+
+/* light paper header with an ink rule */
+[data-skin="studio"] .app-header {
+  background: var(--paper);
+  border-bottom: var(--bd);
+}
+[data-skin="studio"] .app-header .logo {
+  color: var(--accent);
+}
+[data-skin="studio"] .app-header .logo-sub,
+[data-skin="studio"] .app-header .step {
+  color: var(--muted);
+}
+[data-skin="studio"] .app-header .back,
+[data-skin="studio"] .app-header .title-mid {
+  color: var(--ink);
+}
+[data-skin="studio"] .app-header .back {
+  border-color: var(--ink);
+}
+[data-skin="studio"] .app-header .back:hover {
+  background: rgba(0, 0, 0, 0.07);
+  border-color: var(--ink);
+}
+[data-skin="studio"] .app-header .title-mid {
+  color: var(--accent);
+}
+
+/* rounded catalog panels */
+[data-skin="studio"] .b-panel,
+[data-skin="studio"] .t-controls,
+[data-skin="studio"] .loaded-strip,
+[data-skin="studio"] .m-card,
+[data-skin="studio"] .onboard,
+[data-skin="studio"] .faq-sec {
+  border-radius: var(--radius);
+}
+[data-skin="studio"] .single-view {
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+/* pressable hardware buttons: a solid ink lip that sinks on press */
+[data-skin="studio"] .b-btn {
+  border-radius: var(--radius-sm);
+  box-shadow: 0 4px 0 var(--line);
+  transition:
+    transform var(--dur) var(--ease),
+    box-shadow var(--dur) var(--ease),
+    background var(--dur) var(--ease);
+}
+[data-skin="studio"] .b-btn:hover {
+  transform: translateY(1px);
+  box-shadow: 0 3px 0 var(--line);
+}
+[data-skin="studio"] .b-btn:active {
+  transform: translateY(4px);
+  box-shadow: 0 0 0 var(--line);
+}
+[data-skin="studio"] .b-btn:disabled {
+  box-shadow: none;
+  transform: none;
+}
+/* accent CTA (save/fullscreen) is vermilion; the solid "run" stays ink */
+[data-skin="studio"] .b-btn--yellow {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+/* dropzone: rounded hairline plate */
+[data-skin="studio"] .home-drop {
+  border: var(--bd);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  box-shadow: var(--shadow-sm);
+}
+[data-skin="studio"] .home-drop .plus {
+  border-radius: var(--radius-sm);
+}
+
+/* tool cards: flat paper plates, LED index dots, colored run buttons */
+[data-skin="studio"] .tool-card {
+  color: var(--ink);
+  background: var(--surface) !important;
+  border-radius: 12px;
+  transform: none !important;
+  box-shadow: var(--shadow-sm);
+  transition:
+    transform var(--dur) var(--ease),
+    box-shadow var(--dur) var(--ease);
+}
+[data-skin="studio"] .tool-card.c3 .tname,
+[data-skin="studio"] .tool-card.c3 .desc,
+[data-skin="studio"] .tool-card.c4 .tname,
+[data-skin="studio"] .tool-card.c4 .desc {
+  color: var(--ink);
+}
+[data-skin="studio"] .tool-card .num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  border: 1.5px solid var(--ink);
+  box-shadow: 0 0 0 3px rgba(255, 61, 13, 0.18);
+  font-family: var(--font-mono);
+}
+[data-skin="studio"] .tool-card.c2 .num {
+  background: var(--accent-2);
+  box-shadow: 0 0 0 3px rgba(255, 79, 154, 0.18);
+}
+[data-skin="studio"] .tool-card.c3 .num {
+  background: var(--ok);
+  color: #08210f;
+  box-shadow: 0 0 0 3px rgba(47, 191, 76, 0.22);
+}
+[data-skin="studio"] .tool-card.c4 .num {
+  background: var(--warn);
+  color: #241000;
+  box-shadow: 0 0 0 3px rgba(255, 176, 0, 0.2);
+}
+[data-skin="studio"] .tool-card .stat {
+  background: transparent;
+  color: var(--muted) !important;
+  font-family: var(--font-mono);
+}
+[data-skin="studio"] .tool-card .run {
+  background: var(--accent);
+  color: #fff;
+  border-radius: var(--radius-sm);
+}
+[data-skin="studio"] .tool-card.c2 .run {
+  background: var(--accent-2);
+  color: #fff;
+}
+[data-skin="studio"] .tool-card.c3 .run {
+  background: var(--ok);
+  color: #08210f;
+}
+[data-skin="studio"] .tool-card.c4 .run {
+  background: var(--warn);
+  color: #241000;
+}
+[data-skin="studio"] .tool-card:hover {
+  transform: translate(-2px, -2px) !important;
+  box-shadow: var(--shadow);
+}
+
+/* the preview reads as a dark viewfinder screen */
+[data-skin="studio"] .cmp-bar {
+  border-radius: var(--radius) var(--radius) 0 0;
+  background: var(--screen);
+}
+[data-skin="studio"] .cmp-split,
+[data-skin="studio"] .cmp-hold,
+[data-skin="studio"] .cmp-img-wrap,
+[data-skin="studio"] .single-view .cmp-img-wrap,
+[data-skin="studio"] .lightbox {
+  background: var(--screen);
+}
+
+/* ---- Studio motion: a quiet power-on ---- */
+[data-skin="studio"] .cmp,
+[data-skin="studio"] .single-view {
+  animation: studio-boot 0.3s var(--ease) both;
+}
+@keyframes studio-boot {
+  0% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
 }
