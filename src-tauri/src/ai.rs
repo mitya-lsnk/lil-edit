@@ -7,8 +7,10 @@
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
+use tauri::ipc::{Request, Response};
 use tauri::AppHandle;
 
+use crate::ipcx;
 use crate::models::{self, REALESRGAN_BIN, UPSCAYL_BIN, WAIFU2X_BIN};
 
 /// How an engine wants to be called. The two Real-ESRGAN lineages share a CLI;
@@ -97,15 +99,22 @@ fn find_models_dir(dir: &Path) -> Option<PathBuf> {
     None
 }
 
+/// Takes the image as a raw IPC body (an ArrayBuffer from JS) with the knobs in
+/// headers, and returns raw bytes. Passing pixels as a JSON array of numbers —
+/// which is what a `Vec<u8>` argument/return does — boxed every byte and spiked
+/// peak memory to several times the file size in each direction.
 #[tauri::command]
-pub async fn upscale_image(
-    app: AppHandle,
-    image: Vec<u8>,
-    engine: String,
-    scale: u32,
-    model_name: String,
-    denoise: i32,
-) -> Result<Vec<u8>, String> {
+pub async fn upscale_image(app: AppHandle, request: Request<'_>) -> Result<Response, String> {
+    let image = ipcx::raw_body(&request)?;
+    let engine = ipcx::header(&request, "x-engine")?;
+    let model_name = ipcx::header(&request, "x-model")?;
+    let scale: u32 = ipcx::header(&request, "x-scale")?
+        .parse()
+        .map_err(|_| "bad scale".to_string())?;
+    let denoise: i32 = ipcx::header(&request, "x-denoise")?
+        .parse()
+        .map_err(|_| "bad denoise".to_string())?;
+
     let eng = ENGINES
         .iter()
         .find(|e| e.id == engine)
@@ -206,5 +215,5 @@ pub async fn upscale_image(
     }
     let bytes = std::fs::read(&out_path).map_err(|e| e.to_string())?;
     let _ = std::fs::remove_file(&out_path);
-    Ok(bytes)
+    Ok(Response::new(bytes))
 }

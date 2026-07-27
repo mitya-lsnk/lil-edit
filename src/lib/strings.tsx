@@ -261,6 +261,9 @@ const ru = {
       download: "Скачать",
       releasePage: "Страница релиза",
       badgeAria: "Доступно обновление",
+      auto: "Проверять обновления при запуске",
+      autoNote:
+        "Единственное, ради чего приложение само выходит в сеть. Выключите — и без вашей команды оно не откроет ни одного соединения.",
     },
   },
   skins: {
@@ -634,6 +637,9 @@ const en: Dict = {
       download: "Download",
       releasePage: "Release page",
       badgeAria: "Update available",
+      auto: "Check for updates on launch",
+      autoNote:
+        "The only thing the app reaches out for on its own. Turn it off and it opens no connection unless you ask it to.",
     },
   },
   skins: {

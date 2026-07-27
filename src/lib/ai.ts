@@ -1,20 +1,25 @@
 import { invoke } from "@tauri-apps/api/core";
 
-async function fileToBytes(file: Blob): Promise<number[]> {
-  const buf = await file.arrayBuffer();
-  return Array.from(new Uint8Array(buf));
-}
-
-function toBlob(bytes: number[], mime: string): Blob {
-  return new Blob([new Uint8Array(bytes)], { type: mime });
+/**
+ * Image bytes cross the IPC boundary as a raw ArrayBuffer in both directions —
+ * `invoke(cmd, arrayBuffer, { headers })` on the way in, `ipc::Response` on the
+ * way out. The obvious `Array.from(new Uint8Array(buf))` turns a 50 MB PNG into
+ * fifty million boxed numbers plus the JSON text for them; next to that,
+ * everything else these calls do is free.
+ */
+function toBlob(buf: ArrayBuffer, mime: string): Blob {
+  return new Blob([buf], { type: mime });
 }
 
 export async function removeBackground(
   file: Blob,
   modelId: string,
 ): Promise<Blob> {
-  const image = await fileToBytes(file);
-  const out: number[] = await invoke("remove_background", { image, modelId });
+  const out = await invoke<ArrayBuffer>(
+    "remove_background",
+    await file.arrayBuffer(),
+    { headers: { "x-model": modelId } },
+  );
   return toBlob(out, "image/png");
 }
 
@@ -31,7 +36,17 @@ export async function upscaleImage(
   file: Blob,
   opts: UpscaleOpts,
 ): Promise<Blob> {
-  const image = await fileToBytes(file);
-  const out: number[] = await invoke("upscale_image", { image, ...opts });
+  const out = await invoke<ArrayBuffer>(
+    "upscale_image",
+    await file.arrayBuffer(),
+    {
+      headers: {
+        "x-engine": opts.engine,
+        "x-model": opts.modelName,
+        "x-scale": String(opts.scale),
+        "x-denoise": String(opts.denoise),
+      },
+    },
+  );
   return toBlob(out, "image/png");
 }

@@ -6,15 +6,6 @@
   "permissions": [
     "core:default",
     "opener:default",
-    "dialog:default",
-    "fs:default",
-    {
-      "identifier": "fs:allow-write-file",
-      "allow": [{ "path": "$HOME/**" }, { "path": "$DOWNLOAD/**" }, { "path": "$DESKTOP/**" }]
-    },
-    {
-      "identifier": "fs:allow-read-file",
-      "allow": [{ "path": "$HOME/**" }, { "path": "$DOWNLOAD/**" }, { "path": "$DESKTOP/**" }]
-    }
+    "dialog:default"
   ]
 }

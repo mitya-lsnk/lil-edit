@@ -3,8 +3,8 @@
 **English** · [Русский](README.ru.md)
 
 A cross-platform desktop app for working with images: **compression**, **background
-removal**, and **upscaling**. Everything runs locally, offline — nothing is sent to
-the network.
+removal**, and **upscaling**. All processing happens on your machine — your images are
+never uploaded anywhere. See [What goes over the network](#what-goes-over-the-network).
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 ![Tauri](https://img.shields.io/badge/built%20with-Tauri%202-24C8DB)
@@ -114,6 +114,27 @@ By default models go to `<app_data_dir>/models` (macOS:
 checkbox relocates existing files (via copy+delete, so switching drives works).
 
 To add a model, append an entry to `REGISTRY` in `models.rs` (id, url, size, category).
+
+Every download is pinned to a **SHA-256 checksum** verified before the file is used. A
+mismatch deletes the download and reports an error, so a tampered or truncated artifact
+never gets unpacked or executed.
+
+---
+
+## What goes over the network
+
+Your images never leave the machine — there is no upload, no telemetry, no analytics,
+no crash reporting, and no account. The app opens exactly three kinds of connection,
+all of them to public, pinned URLs:
+
+| When | Where | What is sent |
+|---|---|---|
+| **On launch** — update check | `api.github.com` (this repo's latest release) | Nothing but the request itself: your IP and a `lil-image/<version>` User-Agent. Can be turned off: **Settings → Check for updates on launch**. |
+| **You click Download** on a model or engine | GitHub Releases / raw.githubusercontent / HuggingFace | Nothing but the request. Never automatic. |
+| **You click a link** (project page, release notes) | Your browser, not the app | — |
+
+Turning the update check off makes the app fully silent: with the models already
+downloaded it never opens a connection on its own.
 
 ---
 

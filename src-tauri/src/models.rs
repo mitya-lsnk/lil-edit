@@ -47,8 +47,8 @@ pub fn cancel_download(id: String) {
     }
 }
 
-/// An extra file fetched alongside an archive: (url, file name, byte size).
-pub type Extra = (&'static str, &'static str, u64);
+/// An extra file fetched alongside an archive: (url, file name, byte size, sha256).
+pub type Extra = (&'static str, &'static str, u64, &'static str);
 
 /// A downloadable model or tool bundle.
 #[derive(Clone, Serialize)]
@@ -66,6 +66,12 @@ pub struct ModelSpec {
     pub size: &'static str,
     /// Approx byte size (for progress when server omits content-length).
     pub bytes: u64,
+    /// Lowercase hex SHA-256 of the downloaded artifact, verified before it is
+    /// unpacked or run. These are executables we chmod +x and (on macOS) strip
+    /// quarantine from, so "HTTPS to a pinned URL" is not enough on its own: a
+    /// moved tag or a compromised upstream release would otherwise hand us
+    /// arbitrary code. Empty means unpinned — allowed, but nothing ships that way.
+    pub sha256: &'static str,
     /// If true, `file` is a zip that gets extracted into <models>/<id>/.
     pub archive: bool,
     /// Loose files downloaded into <models>/<id>/models/ after extraction.
@@ -85,131 +91,157 @@ pub struct ModelSpec {
 
 // ---------------------------------------------------------------------------
 // Upscale engines. Each ships a separate ncnn-vulkan archive per OS, so the
-// right one is picked at compile time: (url, zip name, human size, byte size).
+// right one is picked at compile time: (url, zip name, human size, byte size,
+// sha256). The hashes are verified before the archive is unpacked — see
+// `verify_sha256`. Re-derive one with:
+//   curl -sL <url> | shasum -a 256
 // ---------------------------------------------------------------------------
 
+/// (url, file name, human size, byte size, sha256)
+type EngineSpec = (&'static str, &'static str, &'static str, u64, &'static str);
+
 #[cfg(target_os = "windows")]
-const REALESRGAN: (&str, &str, &str, u64) = (
+const REALESRGAN: EngineSpec = (
     "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.5.0/realesrgan-ncnn-vulkan-20220424-windows.zip",
     "realesrgan-ncnn-vulkan-windows.zip",
     "45 МБ",
     45_474_481,
+    "abc02804e17982a3be33675e4d471e91ea374e65b70167abc09e31acb412802d",
 );
 #[cfg(target_os = "linux")]
-const REALESRGAN: (&str, &str, &str, u64) = (
+const REALESRGAN: EngineSpec = (
     "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.5.0/realesrgan-ncnn-vulkan-20220424-ubuntu.zip",
     "realesrgan-ncnn-vulkan-ubuntu.zip",
     "47 МБ",
     46_931_474,
+    "e5aa6eb131234b87c0c51f82b89390f5e3e642b7b70f2b9bbe95b6a285a40c96",
 );
 #[cfg(target_os = "macos")]
-const REALESRGAN: (&str, &str, &str, u64) = (
+const REALESRGAN: EngineSpec = (
     "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.5.0/realesrgan-ncnn-vulkan-20220424-macos.zip",
     "realesrgan-ncnn-vulkan-macos.zip",
     "49 МБ",
     51_817_124,
+    "e0ad05580abfeb25f8d8fb55aaf7bedf552c375b5b4d9bd3c8d59764d2cc333a",
 );
 
 // Upscayl's maintained fork of realesrgan-ncnn-vulkan (build 2025-12-07). Same
 // CLI, newer ncnn; the binary ships with no weights at all, hence UPSCAYL_MODELS.
 #[cfg(target_os = "windows")]
-const UPSCAYL: (&str, &str, &str, u64) = (
+const UPSCAYL: EngineSpec = (
     "https://github.com/upscayl/upscayl-ncnn/releases/download/20251207-174704/upscayl-bin-20251207-174704-windows.zip",
     "upscayl-bin-windows.zip",
     "115 МБ",
     2_421_760,
+    "1f0f65c5d2ade866555e2ac467d35952c35a47080a4060fe56a1ab028f67258a",
 );
 #[cfg(target_os = "linux")]
-const UPSCAYL: (&str, &str, &str, u64) = (
+const UPSCAYL: EngineSpec = (
     "https://github.com/upscayl/upscayl-ncnn/releases/download/20251207-174704/upscayl-bin-20251207-174704-linux.zip",
     "upscayl-bin-linux.zip",
     "117 МБ",
     3_952_825,
+    "a9fab3c770b62f2b7a35d8d6d61eb4e8b3aef79128b665c919d080b85a2292f2",
 );
 #[cfg(target_os = "macos")]
-const UPSCAYL: (&str, &str, &str, u64) = (
+const UPSCAYL: EngineSpec = (
     "https://github.com/upscayl/upscayl-ncnn/releases/download/20251207-174704/upscayl-bin-20251207-174704-macos.zip",
     "upscayl-bin-macos.zip",
     "122 МБ",
     9_338_240,
+    "277419791281a56eae0c739c70120b974d7267cf7c2de8e86dc09798d4b314db",
 );
 
-// Weights for the Upscayl engine, pinned to an immutable tag. Sizes verified
-// 2026-07-25 — they drive the progress bar and the "installed" check.
+// Weights for the Upscayl engine, pinned to an immutable tag. Sizes and hashes
+// verified 2026-07-27 — the size drives the progress bar and the "installed"
+// check, the hash is enforced before the file is accepted.
 const UPSCAYL_MODELS: &[Extra] = &[
     (
         "https://raw.githubusercontent.com/upscayl/upscayl/v2.15.0/resources/models/upscayl-standard-4x.param",
         "upscayl-standard-4x.param",
         116_029,
+        "35330ececcea33b6c397a72548e788d5d53becee4734c50b7fada36e89f10a86",
     ),
     (
         "https://raw.githubusercontent.com/upscayl/upscayl/v2.15.0/resources/models/upscayl-standard-4x.bin",
         "upscayl-standard-4x.bin",
         33_424_520,
+        "713ee713b0353afaa27976f0563a64a5043bd70b9bd8936c2e26e25ebcdbcddf",
     ),
     (
         "https://raw.githubusercontent.com/upscayl/upscayl/v2.15.0/resources/models/upscayl-lite-4x.param",
         "upscayl-lite-4x.param",
         5_019,
+        "22174924330297357434ad21ed0af7f4b820008d2a502b492754d130d4142714",
     ),
     (
         "https://raw.githubusercontent.com/upscayl/upscayl/v2.15.0/resources/models/upscayl-lite-4x.bin",
         "upscayl-lite-4x.bin",
         2_435_272,
+        "85ee266b632a765a725425ba6a5620c088c8aa2939a03063b2d83b3462724cc1",
     ),
     (
         "https://raw.githubusercontent.com/upscayl/upscayl/v2.15.0/resources/models/remacri-4x.param",
         "remacri-4x.param",
         140_295,
+        "859ecba5b3592ecf3e76c93bed65e9f627b5236dd696aae5a84ecf8c93ab65ce",
     ),
     (
         "https://raw.githubusercontent.com/upscayl/upscayl/v2.15.0/resources/models/remacri-4x.bin",
         "remacri-4x.bin",
         33_424_520,
+        "a43be595c0d743314c30b50fe7ef188be0c61cc55c46ce81adb79ba4b3c3fb7a",
     ),
     (
         "https://raw.githubusercontent.com/upscayl/upscayl/v2.15.0/resources/models/ultrasharp-4x.param",
         "ultrasharp-4x.param",
         116_029,
+        "0136ca83686809a8f17f7111f11b951e8db93610e24b7f4137c9ffe4dbc4a806",
     ),
     (
         "https://raw.githubusercontent.com/upscayl/upscayl/v2.15.0/resources/models/ultrasharp-4x.bin",
         "ultrasharp-4x.bin",
         33_424_520,
+        "fb3e279d40d4cddb44db4e684d59e68d0aa39852c8cc14dc3f23ccc7e6eee9c1",
     ),
     (
         "https://raw.githubusercontent.com/upscayl/upscayl/v2.15.0/resources/models/digital-art-4x.param",
         "digital-art-4x.param",
         30_290,
+        "2b8fb6e0ae4d2d85704ca08c119a2f5ea40add4f2ecd512eb7f4cd44b6127ed4",
     ),
     (
         "https://raw.githubusercontent.com/upscayl/upscayl/v2.15.0/resources/models/digital-art-4x.bin",
         "digital-art-4x.bin",
         8_943_500,
+        "fe01c269cfd10cdef8e018ab66ebe750cf79c7af4d1f9c16c737e1295229bacc",
     ),
 ];
 
 // waifu2x-ncnn-vulkan (build 2025-09-15) — self-contained, models included.
 #[cfg(target_os = "windows")]
-const WAIFU2X: (&str, &str, &str, u64) = (
+const WAIFU2X: EngineSpec = (
     "https://github.com/nihui/waifu2x-ncnn-vulkan/releases/download/20250915/waifu2x-ncnn-vulkan-20250915-windows.zip",
     "waifu2x-ncnn-vulkan-windows.zip",
     "35 МБ",
     35_497_352,
+    "7425be94b94e4c8f37a1e433ac0e0100c43790e2c37418f4b65d8235adfbdc87",
 );
 #[cfg(target_os = "linux")]
-const WAIFU2X: (&str, &str, &str, u64) = (
+const WAIFU2X: EngineSpec = (
     "https://github.com/nihui/waifu2x-ncnn-vulkan/releases/download/20250915/waifu2x-ncnn-vulkan-20250915-linux.zip",
     "waifu2x-ncnn-vulkan-linux.zip",
     "37 МБ",
     36_658_685,
+    "848e0fba55657d34da90b775b8139e9806dc754798b029f95e106ba8850a731f",
 );
 #[cfg(target_os = "macos")]
-const WAIFU2X: (&str, &str, &str, u64) = (
+const WAIFU2X: EngineSpec = (
     "https://github.com/nihui/waifu2x-ncnn-vulkan/releases/download/20250915/waifu2x-ncnn-vulkan-20250915-macos.zip",
     "waifu2x-ncnn-vulkan-macos.zip",
     "42 МБ",
     41_706_129,
+    "a5b58b239eb3aa030db5464f6759637fe412d8c07891a4346ea57f708b514d42",
 );
 
 /// Engine binary names on this platform (Windows carries .exe).
@@ -237,6 +269,9 @@ pub const REGISTRY: &[ModelSpec] = &[
         file: "birefnet.onnx",
         size: "928 МБ",
         bytes: 972_666_916,
+        // HuggingFace stores LFS objects under their SHA-256, so this is the
+        // `lfs.oid` the model API reports for onnx/model.onnx.
+        sha256: "58f621f00f5d756097615970a88a791584600dcf7c45b18a0a6267535a1ebd3c",
         archive: false,
         extras: &[],
         marker: "",
@@ -253,6 +288,7 @@ pub const REGISTRY: &[ModelSpec] = &[
         file: "u2netp.onnx",
         size: "4.4 МБ",
         bytes: 4_574_861,
+        sha256: "309c8469258dda742793dce0ebea8e6dd393174f89934733ecc8b14c76f4ddd8",
         archive: false,
         extras: &[],
         marker: "",
@@ -269,6 +305,7 @@ pub const REGISTRY: &[ModelSpec] = &[
         file: "u2net.onnx",
         size: "168 МБ",
         bytes: 175_997_641,
+        sha256: "8d10d2f3bb75ae3b6d527c77944fc5e7dcd94b29809d47a739a7a728a912b491",
         archive: false,
         extras: &[],
         marker: "",
@@ -285,6 +322,7 @@ pub const REGISTRY: &[ModelSpec] = &[
         file: "isnet-general-use.onnx",
         size: "170 МБ",
         bytes: 178_648_008,
+        sha256: "60920e99c45464f2ba57bee2ad08c919a52bbf852739e96947fbb4358c0d964a",
         archive: false,
         extras: &[],
         marker: "",
@@ -301,6 +339,7 @@ pub const REGISTRY: &[ModelSpec] = &[
         file: "silueta.onnx",
         size: "42 МБ",
         bytes: 44_173_029,
+        sha256: "75da6c8d2f8096ec743d071951be73b4a8bc7b3e51d9a6625d63644f90ffeedb",
         archive: false,
         extras: &[],
         marker: "",
@@ -317,6 +356,7 @@ pub const REGISTRY: &[ModelSpec] = &[
         file: UPSCAYL.1,
         size: UPSCAYL.2,
         bytes: UPSCAYL.3,
+        sha256: UPSCAYL.4,
         archive: true,
         extras: UPSCAYL_MODELS,
         marker: UPSCAYL_BIN,
@@ -333,6 +373,7 @@ pub const REGISTRY: &[ModelSpec] = &[
         file: REALESRGAN.1,
         size: REALESRGAN.2,
         bytes: REALESRGAN.3,
+        sha256: REALESRGAN.4,
         archive: true,
         extras: &[],
         marker: REALESRGAN_BIN,
@@ -349,6 +390,7 @@ pub const REGISTRY: &[ModelSpec] = &[
         file: WAIFU2X.1,
         size: WAIFU2X.2,
         bytes: WAIFU2X.3,
+        sha256: WAIFU2X.4,
         archive: true,
         extras: &[],
         marker: WAIFU2X_BIN,
@@ -444,7 +486,7 @@ fn is_downloaded(dir: &Path, spec: &ModelSpec) -> bool {
     }
     // A half-finished extras download must not read as installed.
     let ex = extras_dir(dir, spec);
-    spec.extras.iter().all(|(_, name, _)| ex.join(name).is_file())
+    spec.extras.iter().all(|(_, name, _, _)| ex.join(name).is_file())
 }
 
 #[tauri::command]
@@ -538,6 +580,35 @@ async fn fetch_to_file(
     Ok(got)
 }
 
+/// Hex SHA-256 of a file, streamed so a 1 GB model never lands in memory.
+fn sha256_file(path: &Path) -> Result<String, String> {
+    use sha2::{Digest, Sha256};
+    let mut f = std::fs::File::open(path).map_err(|e| e.to_string())?;
+    let mut hasher = Sha256::new();
+    std::io::copy(&mut f, &mut hasher).map_err(|e| e.to_string())?;
+    Ok(format!("{:x}", hasher.finalize()))
+}
+
+/// Fail the download unless `path` hashes to `expected`. An empty `expected`
+/// skips the check (nothing in the registry ships unpinned, but keeping this
+/// tolerant means a locally added entry still works).
+async fn verify_sha256(path: &Path, expected: &str, what: &str) -> Result<(), String> {
+    if expected.is_empty() {
+        return Ok(());
+    }
+    let p = path.to_path_buf();
+    let got = tokio::task::spawn_blocking(move || sha256_file(&p))
+        .await
+        .map_err(|e| e.to_string())??;
+    if !got.eq_ignore_ascii_case(expected) {
+        return Err(format!(
+            "Контрольная сумма не совпала для {what}.\nОжидалось: {expected}\nПолучено:  {got}\n\
+             Файл повреждён или подменён — загрузка удалена. Попробуйте ещё раз."
+        ));
+    }
+    Ok(())
+}
+
 /// Remove any half-written files left by an aborted or failed download so the
 /// model doesn't read as installed and disk isn't left with dead .part files.
 async fn cleanup_partial(dir: &Path, spec: &ModelSpec) {
@@ -604,11 +675,14 @@ async fn download_inner(
         .build()
         .map_err(|e| e.to_string())?;
 
-    let extras_bytes: u64 = spec.extras.iter().map(|(_, _, b)| b).sum();
+    let extras_bytes: u64 = spec.extras.iter().map(|(_, _, b, _)| b).sum();
     let grand_total = spec.bytes + extras_bytes;
 
     let tmp = dir.join(format!("{}.part", spec.file));
     let got = fetch_to_file(app, &client, id, spec.url, &tmp, 0, grand_total).await?;
+    // Check the bytes before anything touches them: an archive is about to be
+    // unpacked and its binary made executable.
+    verify_sha256(&tmp, spec.sha256, spec.file).await?;
     let mut done = got;
 
     if spec.archive {
@@ -636,12 +710,13 @@ async fn download_inner(
             tokio::fs::create_dir_all(&ex_dir)
                 .await
                 .map_err(|e| format!("mkdir failed: {e}"))?;
-            for (url, name, _) in spec.extras {
+            for (url, name, _, sha) in spec.extras {
                 // Download beside the final name, then rename — an interrupted
                 // run leaves a .part behind instead of a truncated weight file
                 // that would read as installed.
                 let part = ex_dir.join(format!("{name}.part"));
                 let n = fetch_to_file(app, &client, id, url, &part, done, grand_total).await?;
+                verify_sha256(&part, sha, name).await?;
                 tokio::fs::rename(&part, ex_dir.join(name))
                     .await
                     .map_err(|e| format!("rename failed: {e}"))?;
@@ -935,4 +1010,53 @@ pub fn set_models_dir(
     };
     settings::store(&app, &s)?;
     models_location(app)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn is_sha256(s: &str) -> bool {
+        s.len() == 64 && s.bytes().all(|b| b.is_ascii_hexdigit() && !b.is_ascii_uppercase())
+    }
+
+    /// Every artifact we download must be pinned. `verify_sha256` tolerates an
+    /// empty hash so a locally added entry still works, which means nothing but
+    /// this test stops an unpinned entry from shipping — these are executables.
+    #[test]
+    fn every_registry_entry_is_pinned() {
+        for spec in REGISTRY {
+            assert!(
+                is_sha256(spec.sha256),
+                "{}: sha256 missing or malformed ({:?})",
+                spec.id,
+                spec.sha256
+            );
+            for (_, name, _, sha) in spec.extras {
+                assert!(
+                    is_sha256(sha),
+                    "{}/{name}: sha256 missing or malformed ({sha:?})",
+                    spec.id
+                );
+            }
+        }
+    }
+
+    /// A wrong hash has to fail, or the check is decoration.
+    #[tokio::test]
+    async fn verify_rejects_a_mismatch_and_accepts_a_match() {
+        let dir = std::env::temp_dir().join("lil-image-sha-test");
+        std::fs::create_dir_all(&dir).unwrap();
+        let f = dir.join("probe.bin");
+        std::fs::write(&f, b"lil image").unwrap();
+        let real = sha256_file(&f).unwrap();
+
+        assert!(verify_sha256(&f, &real, "probe").await.is_ok());
+        // Case-insensitive, since hashes get pasted from all sorts of places.
+        assert!(verify_sha256(&f, &real.to_uppercase(), "probe").await.is_ok());
+        assert!(verify_sha256(&f, &"0".repeat(64), "probe").await.is_err());
+        // An empty pin is the documented escape hatch.
+        assert!(verify_sha256(&f, "", "probe").await.is_ok());
+        let _ = std::fs::remove_file(&f);
+    }
 }

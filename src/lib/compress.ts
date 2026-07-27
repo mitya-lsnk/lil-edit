@@ -93,13 +93,17 @@ export async function encodeImageData(
 export interface CompressResult {
   bytes: ArrayBuffer;
   blob: Blob;
-  url: string;
   width: number;
   height: number;
   size: number;
   format: OutputFormat;
   ms: number;
 }
+// Deliberately no `url` here. Minting an object URL at the point of *creation*
+// makes it nobody's job to revoke: a blob URL pins the whole blob in memory
+// until it is released, and batch mode calls this once per file in a folder.
+// Callers that need to display the result derive the URL in an effect and
+// revoke it in the cleanup — see CompressPanel.
 
 /** Full pipeline: decode → (resize) → encode. */
 export async function compressFile(
@@ -116,7 +120,6 @@ export async function compressFile(
   return {
     bytes,
     blob,
-    url: URL.createObjectURL(blob),
     width: image.width,
     height: image.height,
     size: bytes.byteLength,

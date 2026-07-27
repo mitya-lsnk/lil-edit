@@ -66,9 +66,18 @@ export function UpscalePanel({ file, srcDir, onSendTo, onSaved }: Props) {
       setResultDims(null);
       return;
     }
+    // Guard the decode: a second run before this one loads would otherwise let
+    // the stale image win the race and report the previous result's size.
+    let alive = true;
     const img = new Image();
-    img.onload = () => setResultDims({ w: img.naturalWidth, h: img.naturalHeight });
+    img.onload = () => {
+      if (alive) setResultDims({ w: img.naturalWidth, h: img.naturalHeight });
+    };
     img.src = resultUrl;
+    return () => {
+      alive = false;
+      img.onload = null;
+    };
   }, [resultUrl]);
 
   async function refresh() {

@@ -7,7 +7,10 @@ use std::path::PathBuf;
 use image::{imageops::FilterType, GenericImageView};
 use ort::session::{builder::GraphOptimizationLevel, Session};
 use ort::value::Tensor;
+use tauri::ipc::{Request, Response};
 use tauri::AppHandle;
+
+use crate::ipcx;
 
 /// Per-model input size and normalization (mean, std), matching rembg.
 fn model_params(id: &str) -> (usize, [f32; 3], [f32; 3]) {
@@ -36,17 +39,18 @@ fn model_path(app: &AppHandle, id: &str) -> Result<PathBuf, String> {
     Ok(p)
 }
 
+/// Image in and cut-out out both travel as raw IPC bodies rather than JSON number
+/// arrays — see `ipcx` for why that matters at these sizes.
 #[tauri::command]
-pub async fn remove_background(
-    app: AppHandle,
-    image: Vec<u8>,
-    model_id: String,
-) -> Result<Vec<u8>, String> {
+pub async fn remove_background(app: AppHandle, request: Request<'_>) -> Result<Response, String> {
+    let image = ipcx::raw_body(&request)?;
+    let model_id = ipcx::header(&request, "x-model")?;
     let path = model_path(&app, &model_id)?;
-    // tract work is CPU-heavy and blocking; run off the async runtime.
-    tokio::task::spawn_blocking(move || remove_bg_bytes(&path, &model_id, &image))
+    // Inference is CPU-heavy and blocking; run off the async runtime.
+    let out = tokio::task::spawn_blocking(move || remove_bg_bytes(&path, &model_id, &image))
         .await
-        .map_err(|e| e.to_string())?
+        .map_err(|e| e.to_string())??;
+    Ok(Response::new(out))
 }
 
 /// Pure inference: given a model file path, its id (for preprocessing params),

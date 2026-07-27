@@ -49,6 +49,20 @@ export function CompressPanel({ file, srcDir, onSendTo, onSaved }: Props) {
     setError(null);
   }, [file]);
 
+  // Derive the preview URL from the result and revoke it on the way out — the
+  // single-effect lifecycle is what guarantees it, whether the result is
+  // replaced, the source file swapped, or the panel unmounted.
+  const [resultUrl, setResultUrl] = useState("");
+  useEffect(() => {
+    if (!result) {
+      setResultUrl("");
+      return;
+    }
+    const url = URL.createObjectURL(result.blob);
+    setResultUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [result]);
+
   const meta = FORMAT_META[format];
   const lossy = meta.lossy;
 
@@ -56,11 +70,7 @@ export function CompressPanel({ file, srcDir, onSendTo, onSaved }: Props) {
     setBusy(true);
     setError(null);
     try {
-      const r = await compressFile(file, { format, quality });
-      setResult((prev) => {
-        if (prev) URL.revokeObjectURL(prev.url);
-        return r;
-      });
+      setResult(await compressFile(file, { format, quality }));
     } catch (e) {
       setError(String(e));
     } finally {
@@ -126,10 +136,10 @@ export function CompressPanel({ file, srcDir, onSendTo, onSaved }: Props) {
 
       {error && <div className="b-error">{error}</div>}
 
-      {result ? (
+      {result && resultUrl ? (
         <Compare
           beforeUrl={originalUrl}
-          afterUrl={result.url}
+          afterUrl={resultUrl}
           beforeLabel={s.compress.original}
           afterLabel={meta.label.split(" ")[0]}
           beforeMeta={formatBytes(file.size)}

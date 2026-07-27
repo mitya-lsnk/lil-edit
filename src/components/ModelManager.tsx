@@ -37,6 +37,11 @@ export function ModelManager({ filter, onChanged }: Props) {
   }
 
   useEffect(() => {
+    // Settings can be closed mid-download; anything queued here has to be
+    // cancellable or it fires against a component that no longer exists.
+    const timers = new Set<ReturnType<typeof setTimeout>>();
+    let alive = true;
+
     refresh();
     modelsDirPath().then(setDir).catch(() => {});
     const un = onModelProgress((p) => {
@@ -45,8 +50,10 @@ export function ModelManager({ filter, onChanged }: Props) {
         [p.id]: { downloaded: p.downloaded, total: p.total, phase: p.phase },
       }));
       if (p.phase === "done" || p.phase === "cancelled") {
-        setTimeout(
+        const t = setTimeout(
           () => {
+            timers.delete(t);
+            if (!alive) return;
             setProgress((prev) => {
               const next = { ...prev };
               delete next[p.id];
@@ -57,9 +64,12 @@ export function ModelManager({ filter, onChanged }: Props) {
           },
           p.phase === "cancelled" ? 0 : 400,
         );
+        timers.add(t);
       }
     });
     return () => {
+      alive = false;
+      timers.forEach(clearTimeout);
       un.then((f) => f());
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps

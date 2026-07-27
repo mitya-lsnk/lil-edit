@@ -7,7 +7,9 @@
 
 use std::path::Path;
 
-use tauri::ipc::Response;
+use tauri::ipc::{Request, Response};
+
+use crate::ipcx;
 
 /// Cap on what we'll pull into the webview as a single image.
 const MAX_BYTES: u64 = 512 * 1024 * 1024;
@@ -29,8 +31,13 @@ pub fn read_file_bytes(path: String) -> Result<Response, String> {
     Ok(Response::new(bytes))
 }
 
+/// Mirror of `read_file_bytes`: the payload arrives as a raw ArrayBuffer instead
+/// of a JSON number array, with the destination path percent-encoded in a header
+/// (headers are ASCII-only and paths are not).
 #[tauri::command]
-pub fn write_file_bytes(path: String, data: Vec<u8>) -> Result<(), String> {
+pub fn write_file_bytes(request: Request<'_>) -> Result<(), String> {
+    let data = ipcx::raw_body(&request)?;
+    let path = ipcx::header_decoded(&request, "x-path")?;
     let p = Path::new(&path);
     if let Some(parent) = p.parent() {
         std::fs::create_dir_all(parent).map_err(|e| format!("{}: {e}", parent.display()))?;

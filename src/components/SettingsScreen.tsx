@@ -13,7 +13,12 @@ import {
 } from "../lib/models";
 import { formatBytes } from "../lib/format";
 import { hasTauri } from "../lib/tauri";
-import type { UpdateInfo } from "../lib/update";
+import {
+  autoCheckEnabled,
+  safeReleaseUrl,
+  setAutoCheck,
+  type UpdateInfo,
+} from "../lib/update";
 import { useStrings } from "../lib/i18n";
 
 interface SettingsProps {
@@ -41,6 +46,7 @@ export function SettingsScreen({
   const [loc, setLoc] = useState<ModelsLocation | null>(null);
   const [moveExisting, setMoveExisting] = useState(true);
   const [moving, setMoving] = useState(false);
+  const [autoUpd, setAutoUpd] = useState(autoCheckEnabled);
 
   const tauri = hasTauri();
 
@@ -261,6 +267,19 @@ export function SettingsScreen({
 
         {tauri && (
           <div className="set-update">
+            <label className="t-check">
+              <input
+                type="checkbox"
+                checked={autoUpd}
+                onChange={(e) => {
+                  setAutoUpd(e.target.checked);
+                  setAutoCheck(e.target.checked);
+                }}
+              />
+              {str.settings.update.auto}
+            </label>
+            <p className="set-lead">{str.settings.update.autoNote}</p>
+
             <button className="b-btn" onClick={onCheck} disabled={checking}>
               {checking ? str.settings.update.checking : str.settings.update.check}
             </button>
@@ -283,16 +302,31 @@ export function SettingsScreen({
                     <pre>{update.notes}</pre>
                   </details>
                 )}
+                {/* Both URLs come from the GitHub API, so they're validated
+                    before being handed to the OS opener. */}
                 <div className="set-update-actions">
-                  <button
-                    className="b-btn b-btn--yellow"
-                    onClick={() => openUrl(update.asset ?? update.url)}
-                  >
-                    {str.settings.update.download}
-                  </button>
-                  <button className="b-link" onClick={() => openUrl(update.url)}>
-                    {str.settings.update.releasePage}
-                  </button>
+                  {(() => {
+                    const dl =
+                      safeReleaseUrl(update.asset) ?? safeReleaseUrl(update.url);
+                    const page = safeReleaseUrl(update.url);
+                    return (
+                      <>
+                        {dl && (
+                          <button
+                            className="b-btn b-btn--yellow"
+                            onClick={() => openUrl(dl)}
+                          >
+                            {str.settings.update.download}
+                          </button>
+                        )}
+                        {page && (
+                          <button className="b-link" onClick={() => openUrl(page)}>
+                            {str.settings.update.releasePage}
+                          </button>
+                        )}
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
             )}

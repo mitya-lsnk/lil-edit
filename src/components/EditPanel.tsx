@@ -44,6 +44,17 @@ function parseRatio(str: string): number | null {
 const MAX_STAGE_H = 460; // preview height cap, px
 const MIN_CROP = 0.05; // smallest crop side, normalised
 
+// How many canvases the undo stack may hold, counting the original. Each entry
+// is a full-resolution canvas: a 4000×6000 photo is ~96 MB of backing store, so
+// an unbounded stack walks into gigabytes after a dozen edits.
+const MAX_UNDO = 24;
+
+/** Drop a canvas's backing store. GC alone reclaims these very lazily. */
+function releaseCanvas(c: HTMLCanvasElement) {
+  c.width = 0;
+  c.height = 0;
+}
+
 const clamp = (v: number, lo: number, hi: number) =>
   Math.max(lo, Math.min(hi, v));
 
@@ -92,6 +103,11 @@ export function EditPanel({ file, srcDir, onSendTo, onSaved }: Props) {
     box: DOMRect;
   } | null>(null);
 
+  // Mirrors `stack` so the unmount cleanup can free canvases without making the
+  // effect depend on (and re-run for) every edit.
+  const stackRef = useRef<HTMLCanvasElement[]>([]);
+  stackRef.current = stack;
+
   // ---- load / reset when the source file changes ----
   useEffect(() => {
     let alive = true;
@@ -100,6 +116,8 @@ export function EditPanel({ file, srcDir, onSendTo, onSaved }: Props) {
     loadImageFromFile(file)
       .then((img) => {
         if (!alive) return;
+        // The previous image's history is dead the moment a new file lands.
+        stackRef.current.forEach(releaseCanvas);
         setStack([imageToCanvas(img)]);
         setPos(0);
       })
@@ -108,6 +126,14 @@ export function EditPanel({ file, srcDir, onSendTo, onSaved }: Props) {
       alive = false;
     };
   }, [file]);
+
+  // Free the whole history when the panel goes away.
+  useEffect(
+    () => () => {
+      stackRef.current.forEach(releaseCanvas);
+    },
+    [],
+  );
 
   // ---- keep the preview URL in sync with the current canvas ----
   useEffect(() => {
@@ -162,9 +188,17 @@ export function EditPanel({ file, srcDir, onSendTo, onSaved }: Props) {
     dispW = dispH * baseAspect;
   }
 
+  // Push a new state, dropping whatever the edit invalidates: the redo branch
+  // ahead of `pos`, plus the oldest entries once the stack is full. Both get
+  // their backing store released rather than left to the GC.
   function pushCanvas(next: HTMLCanvasElement) {
-    setStack((prev) => [...prev.slice(0, pos + 1), next]);
-    setPos((p) => p + 1);
+    const kept = stack.slice(0, pos + 1);
+    const redoBranch = stack.slice(pos + 1);
+    const overflow = Math.max(0, kept.length + 1 - MAX_UNDO);
+    const trimmed = kept.slice(overflow);
+    [...redoBranch, ...kept.slice(0, overflow)].forEach(releaseCanvas);
+    setStack([...trimmed, next]);
+    setPos(trimmed.length);
   }
 
   // ---- rotate / flip (immediate) ----

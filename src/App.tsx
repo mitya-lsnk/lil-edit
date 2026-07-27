@@ -17,7 +17,7 @@ import { Toast } from "./components/Toast";
 import { onImageDrop, pickImage, splitPath, type Picked } from "./lib/intake";
 import { joinPath } from "./lib/save";
 import { hasTauri } from "./lib/tauri";
-import { checkUpdate, type UpdateInfo } from "./lib/update";
+import { autoCheckEnabled, checkUpdate, type UpdateInfo } from "./lib/update";
 import { useStrings } from "./lib/i18n";
 
 // The base screen is either home or a tool. Models/Settings/Batch are separate
@@ -56,8 +56,9 @@ function App() {
       setChecking(false);
     }
   }, []);
+  // Startup check only if the user hasn't opted out (Settings → About).
   useEffect(() => {
-    if (hasTauri()) void runCheck();
+    if (hasTauri() && autoCheckEnabled()) void runCheck();
   }, [runCheck]);
 
   const mainRef = useRef<HTMLElement>(null);
