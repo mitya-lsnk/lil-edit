@@ -104,6 +104,9 @@ const ru = {
     engine: "Движок",
     model: "Модель",
     scale: "Масштаб",
+    scaleOneTip:
+        "×1 не увеличивает картинку — она остаётся в исходном размере, модель только убирает шум и артефакты сжатия. Уровень задаётся ползунком «Шумодав».",
+    denoiseOnly: "×1 — размер не меняется, только чистим шум",
     denoise: "Шумодав",
     denoiseNone: "нет",
     run: "Увеличить →",
@@ -474,6 +477,9 @@ const en: Dict = {
     engine: "Engine",
     model: "Model",
     scale: "Scale",
+    scaleOneTip:
+      "×1 doesn't enlarge anything — the image keeps its original size and the model only removes noise and compression artefacts. Strength is set by the Denoise control.",
+    denoiseOnly: "×1 — same size, noise removal only",
     denoise: "Denoise",
     denoiseNone: "off",
     run: "Upscale →",

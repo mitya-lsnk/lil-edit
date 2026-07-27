@@ -4,6 +4,7 @@ import { ENGINES, DENOISE, FOUR } from "../lib/engines";
 import { upscaleImage } from "../lib/ai";
 import { saveBytes } from "../lib/save";
 import { ModelManager } from "./ModelManager";
+import { HelpTip } from "./HelpTip";
 import { Compare } from "./Compare";
 import { SingleView } from "./SingleView";
 import { type Matte } from "../lib/matteBg";
@@ -195,15 +196,20 @@ export function UpscalePanel({ file, srcDir, onSendTo, onSaved }: Props) {
           </select>
         </div>
         <div className="t-field">
-          <span className="t-label">{s.upscale.scale}</span>
+          <span className="t-label">
+            {/* ×1 is a denoise-only pass, which nothing about a list of scale
+                buttons makes obvious. Only cunet offers it. */}
+            {scales.includes(1) && <HelpTip tip={s.upscale.scaleOneTip} />}
+            {s.upscale.scale}
+          </span>
           <div className="t-seg">
-            {scales.map((s) => (
+            {scales.map((sc) => (
               <button
-                key={s}
-                className={effScale === s ? "active" : ""}
-                onClick={() => setScale(s)}
+                key={sc}
+                className={effScale === sc ? "active" : ""}
+                onClick={() => setScale(sc)}
               >
-                ×{s}
+                ×{sc}
               </button>
             ))}
           </div>
@@ -229,6 +235,7 @@ export function UpscalePanel({ file, srcDir, onSendTo, onSaved }: Props) {
         </button>
       </div>
 
+      {effScale === 1 && <p className="t-muted">{s.upscale.denoiseOnly}</p>}
       {busy && <p className="t-muted">{s.upscale.busyNote}</p>}
       {error && <div className="b-error">{error}</div>}
 
