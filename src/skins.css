@@ -737,18 +737,24 @@
 
 [data-skin="studio"] .b-btn {
   border-radius: var(--radius-sm);
-  box-shadow: 0 4px 0 var(--line);
+  /* No resting shadow. A permanent 0 4px lip made every button read as 4px
+     taller than the inputs beside it on the same row — the other skins only
+     raise the shadow on hover, so this one does too. */
+  box-shadow: none;
   transition:
     transform var(--dur) var(--ease),
     box-shadow var(--dur) var(--ease),
     background var(--dur) var(--ease);
 }
 [data-skin="studio"] .b-btn:hover {
-  transform: translateY(1px);
   box-shadow: 0 3px 0 var(--line);
+  /* Lift as well as cast: at button sizes the shadow alone was easy to miss. */
+  transform: translateY(-1px);
+  filter: brightness(1.06);
 }
+/* Press still sinks, just from the hover lip rather than a resting one. */
 [data-skin="studio"] .b-btn:active {
-  transform: translateY(4px);
+  transform: translateY(3px);
   box-shadow: 0 0 0 var(--line);
 }
 [data-skin="studio"] .b-btn:disabled {
@@ -854,6 +860,18 @@
 [data-skin="studio"] .single-view .cmp-img-wrap,
 [data-skin="studio"] .lightbox {
   background: var(--screen);
+}
+/* The bar rounds its top corners, so the stage hanging underneath has to round
+   its bottom ones — otherwise the screen is round on top and square below. */
+[data-skin="studio"] .cmp-split,
+[data-skin="studio"] .cmp-hold {
+  border-radius: 0 0 var(--radius) var(--radius);
+}
+/* Side-by-side and the single view are standalone panels, not hanging off the
+   bar, so they round on all four corners. */
+[data-skin="studio"] .cmp-side .cmp-img-wrap,
+[data-skin="studio"] .single-view .cmp-img-wrap {
+  border-radius: var(--radius-sm);
 }
 
 /* ---- Studio motion: a quiet power-on ---- */

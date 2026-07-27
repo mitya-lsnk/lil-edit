@@ -933,6 +933,51 @@
   color: var(--accent-ink);
   border-color: var(--accent);
 }
+
+/* ---- Stage zoom / pan ----
+   Wheel (and trackpad pinch) zooms the images inside the stage; drag moves them
+   once zoomed. touch-action has to be off or the gesture scrolls the page
+   instead of reaching us. */
+.cmp-hold,
+.cmp-split,
+.cmp-img-wrap {
+  touch-action: none;
+}
+.cmp-hold img,
+.cmp-split .layer img,
+.cmp-img-wrap img {
+  transform-origin: center center;
+}
+.cmp-zoomed img {
+  cursor: grab;
+  /* The transform changes every frame while panning. */
+  will-change: transform;
+}
+.cmp-zoomed.panning img {
+  cursor: grabbing;
+}
+/* Sits where the loupe button would be — only one of them is ever shown. */
+.cmp-zoom-fab {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  z-index: 20;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 40px;
+  padding: 0 14px;
+  border: 2px solid var(--accent);
+  border-radius: var(--radius-pill, 999px);
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-family: var(--font-head);
+  font-weight: 700;
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+}
 /* No text/image selection anywhere in the comparison. */
 .cmp,
 .cmp img {

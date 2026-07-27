@@ -62,8 +62,8 @@ pub fn remove_bg_bytes(
 ) -> Result<Vec<u8>, String> {
     let (size, mean, std) = model_params(model_id);
 
-    let img = image::load_from_memory(image_bytes)
-        .map_err(|e| format!("Не удалось прочитать изображение: {e}"))?;
+    // Oriented, so a phone photo comes back the way the preview showed it.
+    let (img, _) = crate::imgx::decode_oriented(image_bytes)?;
     let (ow, oh) = img.dimensions();
 
     // ---- preprocess: resize to size×size, normalize, NCHW ----

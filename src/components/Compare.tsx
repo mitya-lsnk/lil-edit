@@ -1,4 +1,11 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
 import { createPortal } from "react-dom";
 import { useStrings } from "../lib/i18n";
 import { MattePicker } from "./MattePicker";
@@ -39,6 +46,12 @@ interface LoupePaint {
 const LENS = 150; // px diameter
 const ZOOM = 3;
 
+/** Zoom ceiling for the stage. Past this you are looking at interpolation. */
+const MAX_Z = 8;
+
+const clampNum = (v: number, lo: number, hi: number) =>
+  Math.max(lo, Math.min(hi, v));
+
 export function Compare({
   beforeUrl,
   afterUrl,
@@ -53,7 +66,7 @@ export function Compare({
   const s = useStrings();
   beforeLabel ??= s.compare.before;
   afterLabel ??= s.compare.after;
-  const [mode, setMode] = useState<Mode>("split");
+  const [mode, setMode] = useState<Mode>("hold");
   const [pct, setPct] = useState(50);
   const [full, setFull] = useState(false);
   // Backdrop behind the preview. Letterbox for an opaque result, seen through a
@@ -129,7 +142,9 @@ export function Compare({
     img: HTMLImageElement | null,
     src: string,
   ): LoupePaint | null {
-    if (!loupe || !img) return null;
+    // Once the stage itself is zoomed the lens is both redundant and wrong —
+    // its geometry assumes the image sits untransformed in its box.
+    if (!loupe || !img || zoomed) return null;
     const box = img.getBoundingClientRect();
     const natW = img.naturalWidth || box.width;
     const natH = img.naturalHeight || box.height;
@@ -227,6 +242,109 @@ export function Compare({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [holding]);
 
+  // ---- Zoom & pan -------------------------------------------------------
+  // One transform, shared by every image on screen, so the two halves of a
+  // comparison stay registered with each other however far you zoom in. The
+  // divider and the tags are outside it and keep stage coordinates.
+  const [view, setView] = useState({ z: 1, x: 0, y: 0 });
+  const [panning, setPanning] = useState(false);
+  const panRef = useRef<{ px: number; py: number; ox: number; oy: number } | null>(
+    null,
+  );
+  const stageRef = useRef<HTMLElement | null>(null);
+  const zoomed = view.z > 1;
+
+  const resetView = useCallback(() => setView({ z: 1, x: 0, y: 0 }), []);
+  // A new result, or a different mode, shouldn't inherit the old framing.
+  useEffect(() => resetView(), [beforeUrl, afterUrl, mode, resetView]);
+
+  /** Keep the scaled image covering the stage — no dragging it into the void. */
+  function clampPan(z: number, x: number, y: number, el: HTMLElement | null) {
+    if (!el || z <= 1) return { z, x: 0, y: 0 };
+    const r = el.getBoundingClientRect();
+    const mx = (r.width * (z - 1)) / 2;
+    const my = (r.height * (z - 1)) / 2;
+    return { z, x: clampNum(x, -mx, mx), y: clampNum(y, -my, my) };
+  }
+
+  // React's onWheel is registered passive, so preventDefault there is ignored
+  // and the page scrolls behind the zoom. Attach the listener ourselves, once,
+  // on the root — every mode has a different stage element (and side-by-side has
+  // two), so the stage is resolved from the event target instead.
+  const rootRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+    const onWheel = (e: WheelEvent) => {
+      // Cmd/Ctrl gates the zoom so a plain scroll still moves the page — the
+      // stage is tall enough that swallowing every wheel event trapped it.
+      // A trackpad pinch already arrives as ctrl+wheel, so it keeps working.
+      if (!e.metaKey && !e.ctrlKey) return;
+      const el = (e.target as HTMLElement | null)?.closest<HTMLElement>(
+        ".cmp-hold, .cmp-split, .cmp-img-wrap",
+      );
+      if (!el) return; // wheel over the bar or the captions — let it scroll
+      e.preventDefault();
+      stageRef.current = el;
+      const r = el.getBoundingClientRect();
+      // Cursor relative to the stage centre, which is the transform origin.
+      const cx = e.clientX - r.left - r.width / 2;
+      const cy = e.clientY - r.top - r.height / 2;
+      setView((v) => {
+        // A trackpad pinch arrives as ctrl+wheel; both want the same
+        // exponential feel, just at different deltas.
+        const step = e.ctrlKey ? 0.01 : 0.0025;
+        const nz = clampNum(v.z * Math.exp(-e.deltaY * step), 1, MAX_Z);
+        if (nz === v.z) return v;
+        if (nz === 1) return { z: 1, x: 0, y: 0 };
+        // Hold the point under the cursor still while the scale changes.
+        const k = nz / v.z;
+        return clampPan(nz, cx - (cx - v.x) * k, cy - (cy - v.y) * k, el);
+      });
+      hideLoupe();
+    };
+    root.addEventListener("wheel", onWheel, { passive: false });
+    return () => root.removeEventListener("wheel", onWheel);
+  }, []);
+
+  function startPan(e: React.PointerEvent) {
+    if (!zoomed) return false;
+    stageRef.current = e.currentTarget as HTMLElement;
+    panRef.current = { px: e.clientX, py: e.clientY, ox: view.x, oy: view.y };
+    setPanning(true);
+    try {
+      (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+    } catch {
+      // Panning still works without capture.
+    }
+    return true;
+  }
+  function movePan(e: React.PointerEvent) {
+    const p = panRef.current;
+    if (!p) return false;
+    setView((v) =>
+      clampPan(
+        v.z,
+        p.ox + (e.clientX - p.px),
+        p.oy + (e.clientY - p.py),
+        stageRef.current,
+      ),
+    );
+    return true;
+  }
+  function endPan() {
+    if (!panRef.current) return;
+    panRef.current = null;
+    setPanning(false);
+  }
+
+  /** The shared transform. Undefined at 1× so we don't rasterize for nothing. */
+  const imgStyle: CSSProperties | undefined = zoomed
+    ? { transform: `translate(${view.x}px, ${view.y}px) scale(${view.z})` }
+    : undefined;
+
+  const stageCls = `${zoomed ? "cmp-zoomed" : ""} ${panning ? "panning" : ""}`;
+
   function moveTo(clientX: number) {
     const el = splitRef.current;
     if (!el) return;
@@ -234,6 +352,14 @@ export function Compare({
     let p = ((clientX - r.left) / r.width) * 100;
     p = Math.max(0, Math.min(100, p));
     setPct(p);
+  }
+
+  /** Within grabbing distance of the split divider. */
+  function nearDivider(clientX: number): boolean {
+    const el = splitRef.current;
+    if (!el) return false;
+    const r = el.getBoundingClientRect();
+    return Math.abs(clientX - (r.left + (pct / 100) * r.width)) <= 24;
   }
 
   /** In split mode the after layer is clipped to the right of the divider. */
@@ -253,14 +379,16 @@ export function Compare({
   // (letterbox for an opaque result, seen through a transparent cut-out).
   const mStyle = matteStyle(matte);
 
+  // Hold first and default: press to peek at the original turned out to be the
+  // quickest way to judge a result, and the slider is the deliberate one.
   const MODES: { id: Mode; label: string }[] = [
-    { id: "split", label: s.compare.modeSplit },
     { id: "hold", label: s.compare.modeHold },
+    { id: "split", label: s.compare.modeSplit },
     { id: "side", label: s.compare.modeSide },
   ];
 
   return (
-    <div className="cmp">
+    <div className="cmp" ref={rootRef}>
       <div className="cmp-bar">
         <div className="cmp-left">
           <div className="cmp-modes">
@@ -292,8 +420,9 @@ export function Compare({
 
       {mode === "hold" && (
         <div
-          className={`cmp-hold ${loupe ? "loupe-on" : ""}`}
+          className={`cmp-hold ${stageCls} ${loupe ? "loupe-on" : ""}`}
           style={mStyle}
+          onDoubleClick={resetView}
           onPointerDown={(e) => {
             try {
               (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
@@ -301,9 +430,19 @@ export function Compare({
               // Not a live pointer (or capture refused) — holding still works.
             }
             setHolding(true);
+            // Peek and pan coexist: the press shows the original, the drag
+            // moves both images together.
+            startPan(e);
           }}
-          onPointerUp={() => setHolding(false)}
-          onPointerCancel={() => setHolding(false)}
+          onPointerMove={movePan}
+          onPointerUp={() => {
+            setHolding(false);
+            endPan();
+          }}
+          onPointerCancel={() => {
+            setHolding(false);
+            endPan();
+          }}
           onMouseMove={(e) =>
             moveLoupe(
               e.currentTarget,
@@ -322,6 +461,7 @@ export function Compare({
             ref={holdImgRef}
             src={holding ? beforeUrl : afterUrl}
             alt={holding ? "before" : "after"}
+            style={imgStyle}
             {...noDrag}
           />
           <span className={`cmp-tag ${holding ? "before" : "after"}`}>
@@ -333,33 +473,38 @@ export function Compare({
 
       {mode === "split" && (
         <div
-          className={`cmp-split ${loupe ? "loupe-on" : ""}`}
+          className={`cmp-split ${stageCls} ${loupe ? "loupe-on" : ""}`}
           style={mStyle}
           ref={splitRef}
+          onDoubleClick={resetView}
           onPointerDown={(e) => {
             try {
               (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
             } catch {
               // Dragging still works without capture.
             }
+            // Zoomed in, a drag away from the divider is a pan — the divider
+            // itself stays grabbable by its handle.
+            if (zoomed && !nearDivider(e.clientX)) {
+              startPan(e);
+              return;
+            }
             moveTo(e.clientX);
           }}
           onPointerMove={(e) => {
+            if (movePan(e)) return;
             if (e.buttons === 1) moveTo(e.clientX);
           }}
+          onPointerUp={endPan}
+          onPointerCancel={endPan}
           onMouseMove={(e) => {
             // Near the divider the loupe just covers the handle you're trying to
             // grab — hide it and show the resize cursor there instead.
-            const el = splitRef.current;
-            if (el) {
-              const r = el.getBoundingClientRect();
-              const dividerX = r.left + (pct / 100) * r.width;
-              if (Math.abs(e.clientX - dividerX) <= 24) {
-                paintRef.current = null;
-                e.currentTarget.style.cursor = "ew-resize";
-                schedulePaint();
-                return;
-              }
+            if (nearDivider(e.clientX)) {
+              paintRef.current = null;
+              e.currentTarget.style.cursor = "ew-resize";
+              schedulePaint();
+              return;
             }
             const side = splitSideAt(e.clientX);
             moveLoupe(
@@ -374,13 +519,27 @@ export function Compare({
           onMouseLeave={(e) => hideLoupe(e.currentTarget)}
         >
           <div className="layer before">
-            <img ref={beforeImgRef} src={beforeUrl} alt="before" {...noDrag} />
+            <img
+              ref={beforeImgRef}
+              src={beforeUrl}
+              alt="before"
+              style={imgStyle}
+              {...noDrag}
+            />
           </div>
+          {/* The clip stays in stage coordinates while the image moves under
+              it, so the divider keeps cutting where the cursor says it does. */}
           <div
             className="layer after"
             style={{ clipPath: `inset(0 0 0 ${pct}%)`, ...mStyle }}
           >
-            <img ref={afterImgRef} src={afterUrl} alt="after" {...noDrag} />
+            <img
+              ref={afterImgRef}
+              src={afterUrl}
+              alt="after"
+              style={imgStyle}
+              {...noDrag}
+            />
           </div>
           <div className="divider" style={{ left: `${pct}%` }} />
           <div className="handle" style={{ left: `${pct}%` }}>
@@ -396,8 +555,13 @@ export function Compare({
         <div className="cmp-side">
           <figure>
             <div
-              className={`cmp-img-wrap ${loupe ? "loupe-on" : ""}`}
+              className={`cmp-img-wrap ${stageCls} ${loupe ? "loupe-on" : ""}`}
               style={mStyle}
+              onDoubleClick={resetView}
+              onPointerDown={startPan}
+              onPointerMove={movePan}
+              onPointerUp={endPan}
+              onPointerCancel={endPan}
               onMouseMove={(e) =>
                 moveLoupe(
                   e.currentTarget,
@@ -409,7 +573,13 @@ export function Compare({
               }
               onMouseLeave={(e) => hideLoupe(e.currentTarget)}
             >
-              <img ref={beforeImgRef} src={beforeUrl} alt="before" {...noDrag} />
+              <img
+                ref={beforeImgRef}
+                src={beforeUrl}
+                alt="before"
+                style={imgStyle}
+                {...noDrag}
+              />
             </div>
             <figcaption className="cmp-cap">
               <span>{beforeLabel}</span>
@@ -418,8 +588,13 @@ export function Compare({
           </figure>
           <figure>
             <div
-              className={`cmp-img-wrap ${loupe ? "loupe-on" : ""}`}
+              className={`cmp-img-wrap ${stageCls} ${loupe ? "loupe-on" : ""}`}
               style={mStyle}
+              onDoubleClick={resetView}
+              onPointerDown={startPan}
+              onPointerMove={movePan}
+              onPointerUp={endPan}
+              onPointerCancel={endPan}
               onMouseMove={(e) =>
                 moveLoupe(
                   e.currentTarget,
@@ -431,7 +606,13 @@ export function Compare({
               }
               onMouseLeave={(e) => hideLoupe(e.currentTarget)}
             >
-              <img ref={afterImgRef} src={afterUrl} alt="after" {...noDrag} />
+              <img
+                ref={afterImgRef}
+                src={afterUrl}
+                alt="after"
+                style={imgStyle}
+                {...noDrag}
+              />
             </div>
             <figcaption className="cmp-cap">
               <span>{afterLabel}</span>
@@ -441,18 +622,32 @@ export function Compare({
         </div>
       )}
 
-      {/* Loupe toggle — floating in the stage's bottom-left corner. */}
-      <button
-        className={`cmp-loupe-fab ${loupe ? "active" : ""}`}
-        onClick={() => {
-          setLoupe((v) => !v);
-          hideLoupe();
-        }}
-        title={s.compare.loupeTitle}
-        aria-pressed={loupe}
-      >
-        🔍
-      </button>
+      {/* Loupe toggle — floating in the stage's bottom-left corner. Pointless
+          once the stage itself is zoomed, so it steps aside. */}
+      {!zoomed && (
+        <button
+          className={`cmp-loupe-fab ${loupe ? "active" : ""}`}
+          onClick={() => {
+            setLoupe((v) => !v);
+            hideLoupe();
+          }}
+          title={s.compare.loupeTitle}
+          aria-pressed={loupe}
+        >
+          🔍
+        </button>
+      )}
+
+      {/* Current zoom, and the way back out of it. */}
+      {zoomed && (
+        <button
+          className="cmp-zoom-fab"
+          onClick={resetView}
+          title={s.compare.zoomReset}
+        >
+          {view.z.toFixed(1)}× ✕
+        </button>
+      )}
 
       {/* One persistent lens node, patched imperatively in schedulePaint (never
           re-rendered by React). Portaled to <body>: a fixed lens inside .cmp gets

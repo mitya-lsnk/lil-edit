@@ -1,6 +1,7 @@
 mod ai;
 mod bg;
 mod fsx;
+mod imgx;
 mod ipcx;
 mod models;
 mod settings;

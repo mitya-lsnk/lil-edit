@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { listModels, type ModelStatus } from "../lib/models";
-import { ENGINES, DENOISE, FOUR } from "../lib/engines";
+import { ENGINES, DENOISE, FOUR, loadChoice, saveChoice } from "../lib/engines";
 import { upscaleImage } from "../lib/ai";
 import { saveBytes } from "../lib/save";
 import { ModelManager } from "./ModelManager";
@@ -27,10 +27,12 @@ interface Props {
 export function UpscalePanel({ file, srcDir, onSendTo, onSaved }: Props) {
   const s = useStrings();
   const [models, setModels] = useState<ModelStatus[]>([]);
-  const [engineId, setEngineId] = useState<string | null>(null);
-  const [modelValue, setModelValue] = useState<string | null>(null);
-  const [scale, setScale] = useState(4);
-  const [denoise, setDenoise] = useState(1);
+  // Seeded from the last run so a repeated job doesn't have to be re-picked.
+  const saved = useRef(loadChoice()).current;
+  const [engineId, setEngineId] = useState<string | null>(saved.engineId);
+  const [modelValue, setModelValue] = useState<string | null>(saved.modelValue);
+  const [scale, setScale] = useState(saved.scale);
+  const [denoise, setDenoise] = useState(saved.denoise);
   const [matte, setMatte] = useState<Matte>("theme");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -109,6 +111,19 @@ export function UpscalePanel({ file, srcDir, onSendTo, onSaved }: Props) {
   // engine to produce a copy of the input. Drop the option and floor the level.
   const denoiseLevels = effScale === 1 ? DENOISE.filter((d) => d >= 0) : DENOISE;
   const effDenoise = effScale === 1 && denoise < 0 ? 1 : denoise;
+
+  // Remember the *resolved* selection rather than the raw state: restoring a
+  // combination the engine can't actually run would just reopen the panel in a
+  // broken state. Declared above the early returns so hook order stays fixed.
+  useEffect(() => {
+    if (!engine || !model) return;
+    saveChoice({
+      engineId: engine.id,
+      modelValue: model.value,
+      scale: effScale,
+      denoise: effDenoise,
+    });
+  }, [engine, model, effScale, effDenoise]);
 
   if (!hasTauri()) {
     return (
@@ -222,7 +237,10 @@ export function UpscalePanel({ file, srcDir, onSendTo, onSaved }: Props) {
         </div>
         {engine.denoise && (
           <div className="t-field">
-            <span className="t-label">{s.upscale.denoise}</span>
+            <span className="t-label">
+              <HelpTip tip={s.upscale.denoiseTip} />
+              {s.upscale.denoise}
+            </span>
             <div className="t-seg">
               {denoiseLevels.map((d) => (
                 <button
@@ -237,7 +255,14 @@ export function UpscalePanel({ file, srcDir, onSendTo, onSaved }: Props) {
           </div>
         )}
         <button className="b-btn b-btn--solid" onClick={run} disabled={busy}>
-          {busy ? s.upscale.running : s.upscale.run}
+          {/* "Upscale" would be a lie at ×1 — nothing gets bigger. */}
+          {effScale === 1
+            ? busy
+              ? s.upscale.runningDenoise
+              : s.upscale.runDenoise
+            : busy
+              ? s.upscale.running
+              : s.upscale.run}
         </button>
       </div>
 

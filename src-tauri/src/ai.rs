@@ -151,7 +151,21 @@ pub async fn upscale_image(app: AppHandle, request: Request<'_>) -> Result<Respo
         .unwrap_or(0);
     let in_path = tmp.join(format!("lil-image-in-{stamp}"));
     let out_path = tmp.join(format!("lil-image-out-{stamp}.png"));
-    std::fs::write(&in_path, &image).map_err(|e| format!("temp write failed: {e}"))?;
+
+    // ncnn reads the file itself and ignores EXIF orientation, so a photo shot
+    // sideways came back rotated away from the original it sits next to. Only
+    // pay for a decode+re-encode when the tag actually asks for a transform;
+    // otherwise hand the engine the original bytes untouched.
+    match crate::imgx::orientation_of(&image) {
+        image::metadata::Orientation::NoTransforms => {
+            std::fs::write(&in_path, &image).map_err(|e| format!("temp write failed: {e}"))?;
+        }
+        _ => {
+            let (img, _) = crate::imgx::decode_oriented(&image)?;
+            img.save_with_format(&in_path, image::ImageFormat::Png)
+                .map_err(|e| format!("temp write failed: {e}"))?;
+        }
+    }
 
     let mut cmd = Command::new(&bin);
     cmd.current_dir(&workdir)
