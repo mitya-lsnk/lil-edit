@@ -18,23 +18,24 @@ export interface EngineDef {
 export const FOUR = [2, 3, 4];
 
 /**
- * Only offer scales a model can actually produce.
+ * What each engine does with a scale its weights weren't trained for — worth
+ * knowing before trusting a ×2 or ×3 result, since the two behave differently:
  *
- * These networks have a fixed factor baked in; `-s` does not pick a different
- * one. The two engines then mishandle a mismatch in opposite ways, and both
- * were visible to the user:
+ * - Upscayl parses the factor out of the model *name* and overrides `-s` with
+ *   it, so a `…-4x` model always runs at 4×. Self-correcting: it can't produce
+ *   a mismatch, but a ×2 request comes back at ×4 dimensions.
+ * - Real-ESRGAN has no such inference. It loads `<model>.param` regardless of
+ *   `-s` and then uses `-s` for the output buffer and the tile offsets
+ *   (`xi * TILE_SIZE_X * scale`), so a 4× network asked for ×2 can write tiles
+ *   at the wrong stride.
  *
- * - Real-ESRGAN loads `<model>.param` regardless of `-s`, then uses `-s` for
- *   the output buffer size and the tile offsets (`xi * TILE_SIZE_X * scale`).
- *   Asking a 4× network for ×2 wrote every tile at the wrong stride — the
- *   result came out as a mosaic of misaligned blocks.
- * - Upscayl overrides `-s` with a factor parsed out of the model *name*, so
- *   every `…-4x` model silently produced ×4 no matter which button was lit.
+ * Only realesr-animevideov3 ships a weight file per scale (`-x2/-x3/-x4`), and
+ * waifu2x keeps a model folder per scale, so those are unambiguous.
  *
- * Only `realesr-animevideov3` ships one file per scale (`-x2/-x3/-x4`), and
- * waifu2x keeps separate model folders per scale, so those get a real choice.
+ * All scales are offered for now, pending testing across more images — a
+ * mosaic result was seen once at ×2 on a 64 MP output, where memory pressure is
+ * also a candidate.
  */
-const FOUR_ONLY = [4];
 
 // Ordered by what we'd pick for someone with all three installed.
 export const ENGINES: EngineDef[] = [
@@ -42,13 +43,12 @@ export const ENGINES: EngineDef[] = [
     id: "upscayl-ncnn",
     short: "Upscayl",
     denoise: false,
-    // Every Upscayl weight file is 4×; the name is what sets the factor.
     models: [
-      { value: "upscayl-standard-4x", scales: FOUR_ONLY },
-      { value: "remacri-4x", scales: FOUR_ONLY },
-      { value: "ultrasharp-4x", scales: FOUR_ONLY },
-      { value: "digital-art-4x", scales: FOUR_ONLY },
-      { value: "upscayl-lite-4x", scales: FOUR_ONLY },
+      { value: "upscayl-standard-4x", scales: FOUR },
+      { value: "remacri-4x", scales: FOUR },
+      { value: "ultrasharp-4x", scales: FOUR },
+      { value: "digital-art-4x", scales: FOUR },
+      { value: "upscayl-lite-4x", scales: FOUR },
     ],
   },
   {
@@ -56,9 +56,8 @@ export const ENGINES: EngineDef[] = [
     short: "Real-ESRGAN",
     denoise: false,
     models: [
-      { value: "realesrgan-x4plus", scales: FOUR_ONLY },
-      { value: "realesrgan-x4plus-anime", scales: FOUR_ONLY },
-      // The only one here with a weight file per scale.
+      { value: "realesrgan-x4plus", scales: FOUR },
+      { value: "realesrgan-x4plus-anime", scales: FOUR },
       { value: "realesr-animevideov3", scales: FOUR },
     ],
   },
