@@ -1,6 +1,6 @@
 [package]
 name = "lil-image"
-version = "0.1.5"
+version = "0.1.6"
 description = "lil image — local image compression, background removal and upscaling"
 authors = ["lsnk"]
 license = "MIT"

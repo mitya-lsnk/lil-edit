@@ -297,6 +297,7 @@ function App() {
       {savedPath && (
         <Toast
           path={savedPath}
+          tool={tool}
           onClear={clearWorkspace}
           onClose={() => setSavedPath(null)}
         />

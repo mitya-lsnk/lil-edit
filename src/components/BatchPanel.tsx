@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { open } from "@tauri-apps/plugin-dialog";
 import { hasTauri } from "../lib/tauri";
 import { useStrings } from "../lib/i18n";
@@ -224,6 +224,7 @@ export function BatchPanel() {
                 <span className="t-label">{s.compress.quality} · {settings.quality}</span>
                 <input className="t-range" type="range" min={1} max={100}
                   value={settings.quality}
+                  style={{ ["--fill"]: `${settings.quality}%` } as CSSProperties}
                   onChange={(e) => patch({ quality: Number(e.target.value) })} />
               </div>
             )}
@@ -278,16 +279,21 @@ export function BatchPanel() {
                   ))}
                 </select>
               </div>
-              <div className="t-field">
-                <span className="t-label">{s.upscale.scale}</span>
-                <div className="t-seg">
-                  {scales.map((sc) => (
-                    <button key={sc}
-                      className={(scales.includes(settings.scale) ? settings.scale : scales[scales.length - 1]) === sc ? "active" : ""}
-                      onClick={() => patch({ scale: sc })}>×{sc}</button>
-                  ))}
+              {/* A model with one possible factor gets no chooser — a lone ×4
+                  button reads as a control that does nothing. `start()` clamps
+                  the stored scale to what the model can do. */}
+              {scales.length > 1 && (
+                <div className="t-field">
+                  <span className="t-label">{s.upscale.scale}</span>
+                  <div className="t-seg">
+                    {scales.map((sc) => (
+                      <button key={sc}
+                        className={(scales.includes(settings.scale) ? settings.scale : scales[scales.length - 1]) === sc ? "active" : ""}
+                        onClick={() => patch({ scale: sc })}>×{sc}</button>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
               {engine.denoise && (
                 <div className="t-field">
                   <span className="t-label">{s.upscale.denoise}</span>

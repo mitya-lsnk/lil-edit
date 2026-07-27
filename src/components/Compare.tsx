@@ -32,6 +32,9 @@ interface Props {
  */
 type Mode = "hold" | "split" | "side";
 
+/** Name the zoom modifier the way the keyboard in front of them is labelled. */
+const ZOOM_KEY = /mac/i.test(navigator.userAgent) ? "⌘" : "Ctrl";
+
 /** Everything needed to paint one frame of the magnifier, straight to the DOM. */
 interface LoupePaint {
   x: number;
@@ -407,6 +410,9 @@ export function Compare({
             ))}
           </div>
           <MattePicker value={matte} onChange={setMatte} />
+          {/* Zoom is deliberately behind a modifier so a plain scroll still
+              moves the page — which makes it invisible unless we say so. */}
+          <span className="cmp-zoomhint">{s.compare.zoomHint(ZOOM_KEY)}</span>
         </div>
         <div className="cmp-meta">
           {beforeMeta && <span>{beforeMeta}</span>}

@@ -1042,6 +1042,19 @@
   color: #fff;
   letter-spacing: 0.5px;
 }
+/* Standing reminder that zoom is behind Cmd/Ctrl. Quiet enough to ignore. */
+.cmp-zoomhint {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.5px;
+  color: rgba(255, 255, 255, 0.55);
+  white-space: nowrap;
+}
+@media (max-width: 720px) {
+  .cmp-zoomhint {
+    display: none;
+  }
+}
 .cmp-meta b {
   color: var(--yellow);
 }

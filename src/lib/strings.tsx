@@ -196,6 +196,7 @@ const ru = {
     loupe: "🔍 Лупа",
     loupeTitle: "Лупа: наведите на изображение",
     zoomReset: "Сбросить масштаб (или двойной клик)",
+    zoomHint: (k: string) => `${k} + колесо или пинч — приблизить`,
     matteLabel: "Фон:",
     matteAria: "Подложка",
     matteTheme: "Цвет темы",
@@ -295,6 +296,14 @@ const ru = {
     openFolder: "Открыть папку",
     clear: "Очистить и начать заново",
     close: "Закрыть",
+    // Заголовок тоста после сохранения — по одной случайной реплике на
+    // инструмент. Имя файла рядом остаётся, так что смысл не теряется.
+    quips: {
+      upscale: ["Ух, какой большой", "Нормальный размер", "Немало", "Больше некуда"],
+      background: ["Точно PNG", "…и в продакшен", "А где всё?"],
+      edit: ["Вот теперь нормально", "Как и хотел", "'дём дальше", "Лишнее — за кадром"],
+      compress: ["Шакалов.нет", "Скукожило", "И так сойдёт"],
+    } as Record<string, string[]>,
   },
   lang: {
     label: "Язык",
@@ -578,6 +587,7 @@ const en: Dict = {
     loupe: "🔍 Loupe",
     loupeTitle: "Loupe: hover the image",
     zoomReset: "Reset zoom (or double-click)",
+    zoomHint: (k: string) => `${k} + wheel or pinch to zoom`,
     matteLabel: "Backdrop:",
     matteAria: "Backdrop",
     matteTheme: "Theme colour",
@@ -677,6 +687,38 @@ const en: Dict = {
     openFolder: "Open folder",
     clear: "Clear and start over",
     close: "Close",
+    // Written rather than translated — the Russian ones lean on local memes
+    // that don't survive the trip.
+    quips: {
+      upscale: [
+        "That's a big one",
+        "Enhance. Enhance. Enhance.",
+        "Now with extra pixels",
+        "Bigger. Obviously.",
+        "Zoom in, it holds up",
+      ],
+      background: [
+        "Definitely a PNG",
+        "…and into production",
+        "Where'd it all go?",
+        "Background: dismissed",
+        "Cut clean",
+      ],
+      edit: [
+        "Now that's better",
+        "Just as ordered",
+        "Onwards",
+        "Straight, finally",
+        "Cropped to taste",
+      ],
+      compress: [
+        "No JPEG artefacts were harmed",
+        "Squished",
+        "Good enough, honestly",
+        "Megabytes have left the chat",
+        "Lost weight, kept the looks",
+      ],
+    } as Record<string, string[]>,
   },
   lang: {
     label: "Language",
