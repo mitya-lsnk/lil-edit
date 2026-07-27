@@ -156,6 +156,11 @@ pub async fn upscale_image(app: AppHandle, request: Request<'_>) -> Result<Respo
     // sideways came back rotated away from the original it sits next to. Only
     // pay for a decode+re-encode when the tag actually asks for a transform;
     // otherwise hand the engine the original bytes untouched.
+    // ncnn also drops the colour profile. A Display P3 or Adobe RGB source read
+    // back as sRGB looks washed out next to the original, which the webview
+    // *does* colour-manage — so the tag is carried over to the result below.
+    let src_icc = crate::imgx::icc_of(&image);
+
     match crate::imgx::orientation_of(&image) {
         image::metadata::Orientation::NoTransforms => {
             std::fs::write(&in_path, &image).map_err(|e| format!("temp write failed: {e}"))?;
@@ -229,5 +234,9 @@ pub async fn upscale_image(app: AppHandle, request: Request<'_>) -> Result<Respo
     }
     let bytes = std::fs::read(&out_path).map_err(|e| e.to_string())?;
     let _ = std::fs::remove_file(&out_path);
+    let bytes = match src_icc {
+        Some(icc) => crate::imgx::png_with_icc(bytes, &icc),
+        None => bytes,
+    };
     Ok(Response::new(bytes))
 }

@@ -62,8 +62,10 @@ pub fn remove_bg_bytes(
 ) -> Result<Vec<u8>, String> {
     let (size, mean, std) = model_params(model_id);
 
-    // Oriented, so a phone photo comes back the way the preview showed it.
+    // Oriented, so a phone photo comes back the way the preview showed it, and
+    // the colour profile is carried over so it doesn't read as sRGB later.
     let (img, _) = crate::imgx::decode_oriented(image_bytes)?;
+    let src_icc = crate::imgx::icc_of(image_bytes);
     let (ow, oh) = img.dimensions();
 
     // ---- preprocess: resize to size×size, normalize, NCHW ----
@@ -178,7 +180,11 @@ pub fn remove_bg_bytes(
     let mut buf = std::io::Cursor::new(Vec::new());
     out.write_to(&mut buf, image::ImageFormat::Png)
         .map_err(|e| format!("Ошибка кодирования PNG: {e}"))?;
-    Ok(buf.into_inner())
+    let png = buf.into_inner();
+    Ok(match src_icc {
+        Some(icc) => crate::imgx::png_with_icc(png, &icc),
+        None => png,
+    })
 }
 
 #[cfg(test)]

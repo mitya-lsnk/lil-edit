@@ -32,10 +32,14 @@ export const FOUR = [2, 3, 4];
  * Only realesr-animevideov3 ships a weight file per scale (`-x2/-x3/-x4`), and
  * waifu2x keeps a model folder per scale, so those are unambiguous.
  *
- * All scales are offered for now, pending testing across more images — a
- * mosaic result was seen once at ×2 on a 64 MP output, where memory pressure is
- * also a candidate.
+ * Confirmed by testing: on Real-ESRGAN, ×2/×3 come out as a mosaic on both
+ * x4plus models and are fine on animevideov3 — exactly what the code above
+ * predicts. Those two therefore offer no choice at all, and the UI drops the
+ * scale control rather than showing a lone ×4 button.
  */
+
+/** A single fixed factor: the model has one weight file and no alternative. */
+const ONLY_4 = [4];
 
 // Ordered by what we'd pick for someone with all three installed.
 export const ENGINES: EngineDef[] = [
@@ -56,8 +60,9 @@ export const ENGINES: EngineDef[] = [
     short: "Real-ESRGAN",
     denoise: false,
     models: [
-      { value: "realesrgan-x4plus", scales: FOUR },
-      { value: "realesrgan-x4plus-anime", scales: FOUR },
+      { value: "realesrgan-x4plus", scales: ONLY_4 },
+      { value: "realesrgan-x4plus-anime", scales: ONLY_4 },
+      // One weight file per scale, so the choice is real here.
       { value: "realesr-animevideov3", scales: FOUR },
     ],
   },

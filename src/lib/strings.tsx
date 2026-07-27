@@ -114,6 +114,7 @@ const ru = {
     denoiseNone: "нет",
     run: "Увеличить →",
     running: "Апскейл…",
+    runAt: (n: number) => `Увеличить ×${n} →`,
     runDenoise: "Убрать шум →",
     runningDenoise: "Чистим…",
     busyNote: "Обработка может занять от секунд до минуты — зависит от размера и GPU.",
@@ -493,6 +494,7 @@ const en: Dict = {
     denoiseNone: "off",
     run: "Upscale →",
     running: "Upscaling…",
+    runAt: (n: number) => `Upscale ×${n} →`,
     runDenoise: "Remove noise →",
     runningDenoise: "Cleaning…",
     busyNote:

@@ -2154,6 +2154,7 @@ dependencies = [
 name = "lil-image"
 version = "0.1.5"
 dependencies = [
+ "flate2",
  "futures-util",
  "image",
  "ort",

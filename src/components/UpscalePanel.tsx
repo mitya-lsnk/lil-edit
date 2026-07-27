@@ -214,27 +214,31 @@ export function UpscalePanel({ file, srcDir, onSendTo, onSaved }: Props) {
             ))}
           </select>
         </div>
-        <div className="t-field">
-          <span className="t-label">
-            {/* ×1 is a denoise-only pass, which nothing about a list of scale
-                buttons makes obvious. Only cunet offers it. */}
-            {scales.includes(1) && <HelpTip tip={s.upscale.scaleOneTip} />}
-            {s.upscale.scale}
-          </span>
-          <div className="t-seg">
-            {scales.map((sc) => (
-              <button
-                key={sc}
-                className={effScale === sc ? "active" : ""}
-                onClick={() => setScale(sc)}
-              >
-                {/* Scale 1 is a denoise-only pass, so it says so rather than
-                    sitting in the row as a "×1" that looks like a no-op. */}
-                {sc === 1 ? s.upscale.denoiseSeg : `×${sc}`}
-              </button>
-            ))}
+        {/* Models with one fixed factor get no control at all — a lone ×4
+            button reads as a choice, and there isn't one. */}
+        {scales.length > 1 && (
+          <div className="t-field">
+            <span className="t-label">
+              {/* ×1 is a denoise-only pass, which nothing about a list of scale
+                  buttons makes obvious. Only cunet offers it. */}
+              {scales.includes(1) && <HelpTip tip={s.upscale.scaleOneTip} />}
+              {s.upscale.scale}
+            </span>
+            <div className="t-seg">
+              {scales.map((sc) => (
+                <button
+                  key={sc}
+                  className={effScale === sc ? "active" : ""}
+                  onClick={() => setScale(sc)}
+                >
+                  {/* Scale 1 is a denoise-only pass, so it says so rather than
+                      sitting in the row as a "×1" that looks like a no-op. */}
+                  {sc === 1 ? s.upscale.denoiseSeg : `×${sc}`}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
         {engine.denoise && (
           <div className="t-field">
             <span className="t-label">
@@ -255,14 +259,18 @@ export function UpscalePanel({ file, srcDir, onSendTo, onSaved }: Props) {
           </div>
         )}
         <button className="b-btn b-btn--solid" onClick={run} disabled={busy}>
-          {/* "Upscale" would be a lie at ×1 — nothing gets bigger. */}
+          {/* "Upscale" would be a lie at ×1 — nothing gets bigger. And when the
+              model has no choice of factor, the button says which one it is,
+              since there's no longer a row of buttons showing it. */}
           {effScale === 1
             ? busy
               ? s.upscale.runningDenoise
               : s.upscale.runDenoise
             : busy
               ? s.upscale.running
-              : s.upscale.run}
+              : scales.length === 1
+                ? s.upscale.runAt(effScale)
+                : s.upscale.run}
         </button>
       </div>
 
