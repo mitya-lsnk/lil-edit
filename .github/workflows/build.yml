@@ -23,6 +23,13 @@ jobs:
     permissions:
       contents: write
 
+    # src-tauri/.cargo/config.toml redirects the build output to
+    # `target.noindex` so Spotlight leaves the intermediates alone on a Mac.
+    # The env var outranks the config file, keeping the plain `target/` that
+    # the cache key and the upload globs below are written against.
+    env:
+      CARGO_TARGET_DIR: target
+
     steps:
       - uses: actions/checkout@v4
 
