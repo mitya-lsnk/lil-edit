@@ -202,7 +202,7 @@
 }
 
 /* =====================================================================
-   SKIN: TEENAGE ENGINEERING  (device grey, rounded, hairlines, LEDs)
+   SKIN: DEVICE  (device grey, rounded corners, hairline rules, LED dots)
    ===================================================================== */
 [data-skin="te"] {
   --paper: #e4e3de;

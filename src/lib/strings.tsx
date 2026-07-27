@@ -10,13 +10,9 @@ import type { ReactNode } from "react";
 
 const ru = {
   app: {
-    tagline: "Image Toolkit",
     back: "Назад",
-    menu: "Меню",
     modelsTitle: "МОДЕЛИ",
     settingsTitle: "НАСТРОЙКИ",
-    helpModels: "Модели",
-    helpSettings: "Настройки",
     settingsAria: "Настройки",
     dropTitle: "Перетащите изображение сюда",
     dropSub: "бросьте файл в любое место окна",
@@ -385,13 +381,9 @@ export type Dict = typeof ru;
 
 const en: Dict = {
   app: {
-    tagline: "Image Toolkit",
     back: "Back",
-    menu: "Menu",
     modelsTitle: "MODELS",
     settingsTitle: "SETTINGS",
-    helpModels: "Models",
-    helpSettings: "Settings",
     settingsAria: "Settings",
     dropTitle: "Drop an image here",
     dropSub: "drop a file anywhere in the window",

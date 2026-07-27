@@ -15,8 +15,8 @@ export interface SkinMeta {
   swatch: [string, string];
 }
 
-// Names and taglines are localized — see the `skins` block in strings.tsx,
-// keyed by id. Here we only keep what doesn't translate: the id and swatches.
+// Names are localized — see the `skins` block in strings.tsx, keyed by id.
+// Here we only keep what doesn't translate: the id and the swatch colors.
 // studio is the default — listed first, and the fallback when nothing is stored.
 export const SKINS: SkinMeta[] = [
   { id: "studio", swatch: ["#ff3d0d", "#2fbf4c"] },
@@ -26,7 +26,6 @@ export const SKINS: SkinMeta[] = [
 ];
 
 const STORAGE_KEY = "lilimage.skin";
-const LEGACY_KEY = "blopimage.skin"; // pre-rename; migrated on first read
 const MODE_KEY = "lilimage.mode";
 
 function isSkin(v: unknown): v is Skin {
@@ -40,8 +39,6 @@ function readInitial(): Skin {
   if (typeof localStorage !== "undefined") {
     const v = localStorage.getItem(STORAGE_KEY);
     if (isSkin(v)) return v;
-    const legacy = localStorage.getItem(LEGACY_KEY);
-    if (isSkin(legacy)) return legacy; // carry the pre-rename choice over
   }
   return "studio";
 }
