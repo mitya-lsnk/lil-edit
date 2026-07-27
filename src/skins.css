@@ -709,6 +709,32 @@
 }
 
 /* pressable hardware buttons: a solid ink lip that sinks on press */
+/* Segmented controls. Without this they fall back to the brutal base — square
+   corners and a black-filled active segment — which reads as a different kit
+   next to the rounded select and run button sitting on the same row. */
+[data-skin="studio"] .t-seg {
+  border-radius: var(--radius-sm);
+  /* The children are square; clipping is what rounds the end caps. */
+  overflow: hidden;
+  background: var(--surface);
+}
+[data-skin="studio"] .t-seg button {
+  border-right-width: var(--bd-w);
+  background: var(--surface);
+  transition:
+    background var(--dur) var(--ease),
+    color var(--dur) var(--ease);
+}
+[data-skin="studio"] .t-seg button:hover:not(.active):not(:disabled) {
+  background: var(--surface-2);
+}
+/* Vermilion fill rather than ink+yellow: the accent is what marks state
+   everywhere else in this skin, and black here overpowered the row. */
+[data-skin="studio"] .t-seg button.active {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
 [data-skin="studio"] .b-btn {
   border-radius: var(--radius-sm);
   box-shadow: 0 4px 0 var(--line);

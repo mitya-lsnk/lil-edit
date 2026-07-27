@@ -105,6 +105,10 @@ export function UpscalePanel({ file, srcDir, onSendTo, onSaved }: Props) {
     engine?.models.find((m) => m.value === modelValue) ?? engine?.models[0];
   const scales = model?.scales ?? FOUR;
   const effScale = scales.includes(scale) ? scale : scales[scales.length - 1];
+  // Denoising is the entire point of the scale-1 pass, so "off" would run the
+  // engine to produce a copy of the input. Drop the option and floor the level.
+  const denoiseLevels = effScale === 1 ? DENOISE.filter((d) => d >= 0) : DENOISE;
+  const effDenoise = effScale === 1 && denoise < 0 ? 1 : denoise;
 
   if (!hasTauri()) {
     return (
@@ -124,7 +128,7 @@ export function UpscalePanel({ file, srcDir, onSendTo, onSaved }: Props) {
         engine: engine.id,
         scale: effScale,
         modelName: model.value,
-        denoise,
+        denoise: effDenoise,
       });
       const buf = new Uint8Array(await blob.arrayBuffer());
       setResultBytes(buf);
@@ -209,7 +213,9 @@ export function UpscalePanel({ file, srcDir, onSendTo, onSaved }: Props) {
                 className={effScale === sc ? "active" : ""}
                 onClick={() => setScale(sc)}
               >
-                ×{sc}
+                {/* Scale 1 is a denoise-only pass, so it says so rather than
+                    sitting in the row as a "×1" that looks like a no-op. */}
+                {sc === 1 ? s.upscale.denoiseSeg : `×${sc}`}
               </button>
             ))}
           </div>
@@ -218,10 +224,10 @@ export function UpscalePanel({ file, srcDir, onSendTo, onSaved }: Props) {
           <div className="t-field">
             <span className="t-label">{s.upscale.denoise}</span>
             <div className="t-seg">
-              {DENOISE.map((d) => (
+              {denoiseLevels.map((d) => (
                 <button
                   key={d}
-                  className={denoise === d ? "active" : ""}
+                  className={effDenoise === d ? "active" : ""}
                   onClick={() => setDenoise(d)}
                 >
                   {d === -1 ? s.upscale.denoiseNone : String(d)}
