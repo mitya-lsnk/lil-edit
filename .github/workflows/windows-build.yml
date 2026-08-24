@@ -19,10 +19,18 @@ jobs:
   build:
     runs-on: windows-latest
 
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      # The local `.cargo/config.toml` sends builds to `target.noindex` so
+      # Spotlight ignores the intermediates on a Mac. On a runner it only means
+      # the bundles land somewhere the upload globs below don't look.
+      # Explicit bash: PowerShell aliases `rm` to Remove-Item, where `-f` is
+      # ambiguous between -Filter and -Force.
+      - name: Use the default target directory
+        shell: bash
+        run: rm -f src-tauri/.cargo/config.toml
 
       - name: Setup Node
         uses: actions/setup-node@v4

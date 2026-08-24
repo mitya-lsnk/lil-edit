@@ -35,6 +35,10 @@ jobs:
       # everything on the default `src-tauri/target`, which is what the upload
       # globs and tauri-action both expect.
       - name: Use the default target directory
+        # Explicit bash: the default shell on a Windows runner is PowerShell,
+        # where `rm` is an alias for Remove-Item and `-f` is ambiguous between
+        # -Filter and -Force.
+        shell: bash
         run: rm -f src-tauri/.cargo/config.toml
 
 
