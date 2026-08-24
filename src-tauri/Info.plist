@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Merged into the generated Info.plist by the macOS bundler.
+
+  Opening, batch-processing and saving images means reading and writing the
+  Desktop, Documents, Downloads and external drives — all of which macOS gates
+  behind a consent prompt. These strings are the reason that prompt shows;
+  without them it appears anyway, unexplained, and a refusal reaches the app as
+  a bare "Operation not permitted".
+-->
+<plist version="1.0">
+<dict>
+  <key>NSDesktopFolderUsageDescription</key>
+  <string>Чтобы открывать и сохранять изображения на рабочем столе.</string>
+  <key>NSDocumentsFolderUsageDescription</key>
+  <string>Чтобы открывать и сохранять изображения в папке «Документы».</string>
+  <key>NSDownloadsFolderUsageDescription</key>
+  <string>Чтобы открывать и сохранять изображения в папке «Загрузки».</string>
+  <key>NSRemovableVolumesUsageDescription</key>
+  <string>Чтобы открывать и сохранять изображения на флешках и внешних дисках.</string>
+  <key>NSNetworkVolumesUsageDescription</key>
+  <string>Чтобы открывать и сохранять изображения на сетевых дисках.</string>
+</dict>
+</plist>

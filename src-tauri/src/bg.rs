@@ -287,6 +287,6 @@ mod tests {
     /// Where the running app keeps downloaded weights (macOS).
     fn dirs_models() -> PathBuf {
         PathBuf::from(std::env::var("HOME").unwrap_or_default())
-            .join("Library/Application Support/com.lil.image/models")
+            .join("Library/Application Support/com.lil.edit/models")
     }
 }

@@ -1,6 +1,7 @@
 import { open } from "@tauri-apps/plugin-dialog";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
-import type { UnlistenFn } from "@tauri-apps/api/event";
+import { invoke } from "@tauri-apps/api/core";
+import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { readFileBytes } from "./fsx";
 import { hasTauri } from "./tauri";
 
@@ -131,6 +132,47 @@ export function onImageDrop(
     window.removeEventListener("dragenter", swallowDrop);
     window.removeEventListener("dragover", swallowDrop);
     window.removeEventListener("drop", onDrop);
+  };
+}
+
+/**
+ * Subscribe to files handed to us from outside — Finder, or "Open in lil edit"
+ * from lil view.
+ *
+ * Two sources, and both are needed. A cold launch delivers the path to Rust
+ * before React has mounted, so it is buffered there and drained here on mount;
+ * every later hand-off arrives while we're running and comes through the
+ * `open-files` event.
+ */
+export function onOpenedFiles(
+  cb: (picked: Picked) => void,
+  onError?: (message: string) => void,
+): () => void {
+  if (!hasTauri()) return () => {};
+
+  let dead = false;
+  const accept = async (paths: string[]) => {
+    const path = paths.find(isImagePath);
+    if (!path || dead) return;
+    try {
+      const picked = await loadPath(path);
+      if (!dead) cb(picked);
+    } catch (err) {
+      if (!dead) onError?.(String(err));
+    }
+  };
+
+  void invoke<string[]>("take_pending_open").then(accept).catch(() => {});
+
+  let unlisten: UnlistenFn | null = null;
+  void listen<string[]>("open-files", (e) => void accept(e.payload)).then((un) => {
+    if (dead) un();
+    else unlisten = un;
+  });
+
+  return () => {
+    dead = true;
+    unlisten?.();
   };
 }
 

@@ -97,7 +97,7 @@ export interface UpscaleChoice {
   denoise: number;
 }
 
-const CHOICE_KEY = "lilimage.upscale.choice";
+const CHOICE_KEY = "liledit.upscale.choice";
 
 const DEFAULT_CHOICE: UpscaleChoice = {
   engineId: null,

@@ -14,7 +14,7 @@ import { LanguagePicker } from "./components/LanguagePicker";
 import { ModeToggle } from "./components/ModeToggle";
 import { FileStrip } from "./components/FileStrip";
 import { Toast } from "./components/Toast";
-import { onImageDrop, pickImage, splitPath, type Picked } from "./lib/intake";
+import { onImageDrop, onOpenedFiles, pickImage, splitPath, type Picked } from "./lib/intake";
 import { joinPath } from "./lib/save";
 import { hasTauri } from "./lib/tauri";
 import { autoCheckEnabled, checkUpdate, type UpdateInfo } from "./lib/update";
@@ -76,6 +76,20 @@ function App() {
       onImageDrop((p) => {
         setDropError(null);
         setPicked(p);
+      }, setDropError),
+    [],
+  );
+
+  // Same landing as a drop, for a file opened from Finder or handed over by
+  // lil view. Goes to the home screen with the picture loaded, so the choice of
+  // tool stays with the person.
+  useEffect(
+    () =>
+      onOpenedFiles((p) => {
+        setDropError(null);
+        setPicked(p);
+        setAux(null);
+        setScreen("home");
       }, setDropError),
     [],
   );
@@ -166,8 +180,8 @@ function App() {
       <header className="app-header">
         <div className="head-left">
           {/* The logo is the way home — no separate back/menu button. */}
-          <button className="logo-btn" onClick={goHome} aria-label="lil image — home">
-            <span className="logo">LIL IMAGE</span>
+          <button className="logo-btn" onClick={goHome} aria-label="lil edit — home">
+            <span className="logo">LIL EDIT</span>
           </button>
           {/* Explicit way back — closes an overlay, else goes home. */}
           {(aux || onTool) && (

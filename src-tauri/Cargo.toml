@@ -1,10 +1,10 @@
 [package]
-name = "lil-image"
-version = "0.1.6"
-description = "lil image — local image compression, background removal and upscaling"
+name = "lil-edit"
+version = "0.1.7"
+description = "lil edit — local image compression, background removal and upscaling"
 authors = ["lsnk"]
 license = "MIT"
-repository = "https://github.com/mitya-lsnk/lil-image"
+repository = "https://github.com/mitya-lsnk/lil-edit"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -13,7 +13,7 @@ edition = "2021"
 # The `_lib` suffix may seem redundant but it is necessary
 # to make the lib name unique and wouldn't conflict with the bin name.
 # This seems to be only an issue on Windows, see https://github.com/rust-lang/cargo/issues/8519
-name = "lil_image_lib"
+name = "lil_edit_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]

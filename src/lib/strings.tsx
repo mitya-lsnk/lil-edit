@@ -85,7 +85,7 @@ const ru = {
     needModel: "Сначала скачайте модель фона в Настройках.",
     browser: (
       <p>
-        <b>Пакетная обработка работает в приложении lil image.</b> Ей нужен доступ
+        <b>Пакетная обработка работает в приложении lil edit.</b> Ей нужен доступ
         к папкам на диске, которого нет в браузере. Запусти{" "}
         <code>npm run tauri dev</code>.
       </p>
@@ -132,7 +132,7 @@ const ru = {
     ),
     browser: (
       <p>
-        <b>Апскейл работает в приложении lil image.</b> Ему нужен движок ncnn и
+        <b>Апскейл работает в приложении lil edit.</b> Ему нужен движок ncnn и
         GPU через Vulkan — в браузере их нет. Запусти{" "}
         <code>npm run tauri dev</code>.
       </p>
@@ -183,7 +183,7 @@ const ru = {
     ),
     browser: (
       <p>
-        <b>Удаление фона работает в приложении lil image.</b> Ему нужен локальный
+        <b>Удаление фона работает в приложении lil edit.</b> Ему нужен локальный
         AI-движок из Rust-бэкенда, которого нет в браузере. Запусти{" "}
         <code>npm run tauri dev</code> — там всё заработает.
       </p>
@@ -253,7 +253,7 @@ const ru = {
     version: "Версия",
     about: (
       <p className="set-lead">
-        <b>lil image</b> — локальный набор инструментов для изображений: сжатие,
+        <b>lil edit</b> — локальный набор инструментов для изображений: сжатие,
         апскейл и удаление фона. Всё считается на вашем компьютере, без отправки
         в сеть.
       </p>
@@ -475,7 +475,7 @@ const en: Dict = {
     needModel: "Download a background model in Settings first.",
     browser: (
       <p>
-        <b>Batch processing runs in the lil image app.</b> It needs folder access
+        <b>Batch processing runs in the lil edit app.</b> It needs folder access
         the browser doesn't have. Run <code>npm run tauri dev</code>.
       </p>
     ),
@@ -523,7 +523,7 @@ const en: Dict = {
     ),
     browser: (
       <p>
-        <b>Upscaling runs in the lil image app.</b> It needs the ncnn engine and
+        <b>Upscaling runs in the lil edit app.</b> It needs the ncnn engine and
         a GPU through Vulkan — neither exists in the browser. Run{" "}
         <code>npm run tauri dev</code>.
       </p>
@@ -574,7 +574,7 @@ const en: Dict = {
     ),
     browser: (
       <p>
-        <b>Background removal runs in the lil image app.</b> It needs the local
+        <b>Background removal runs in the lil edit app.</b> It needs the local
         AI engine in the Rust backend, which the browser doesn't have. Run{" "}
         <code>npm run tauri dev</code> and it'll work there.
       </p>
@@ -644,7 +644,7 @@ const en: Dict = {
     version: "Version",
     about: (
       <p className="set-lead">
-        <b>lil image</b> is a local image toolkit: compression, upscaling and
+        <b>lil edit</b> is a local image toolkit: compression, upscaling and
         background removal. Everything runs on your machine, nothing is sent to
         the network.
       </p>

@@ -51,8 +51,8 @@ export interface BatchError {
   error: string;
 }
 
-const PATHS_KEY = "lilimage.batch.paths";
-const SET_KEY = "lilimage.batch.settings";
+const PATHS_KEY = "liledit.batch.paths";
+const SET_KEY = "liledit.batch.settings";
 
 const DEFAULT_PATHS: BatchPaths = { source: "", dest: "", remember: false };
 

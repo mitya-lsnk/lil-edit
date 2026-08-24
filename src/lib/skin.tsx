@@ -25,8 +25,8 @@ export const SKINS: SkinMeta[] = [
   { id: "te", swatch: ["#fa4b00", "#15150f"] },
 ];
 
-const STORAGE_KEY = "lilimage.skin";
-const MODE_KEY = "lilimage.mode";
+const STORAGE_KEY = "liledit.skin";
+const MODE_KEY = "liledit.mode";
 
 function isSkin(v: unknown): v is Skin {
   return v === "brutal" || v === "riso" || v === "te" || v === "studio";

@@ -33,7 +33,7 @@ export async function checkUpdate(): Promise<UpdateInfo> {
 // network connection unless the user asks it to.
 // ---------------------------------------------------------------------------
 
-const AUTO_KEY = "lilimage.update.auto";
+const AUTO_KEY = "liledit.update.auto";
 
 export function autoCheckEnabled(): boolean {
   try {

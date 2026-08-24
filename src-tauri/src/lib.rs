@@ -7,9 +7,23 @@ mod models;
 mod settings;
 mod update;
 
+/// Files another app (or Finder) asked us to open before the webview was ready.
+///
+/// A cold launch delivers `RunEvent::Opened` while React is still mounting, so
+/// the paths have to wait somewhere. The frontend drains this on mount and
+/// listens for `open-files` afterwards. Without the buffer, "Open in lil edit"
+/// from lil view would start the app on an empty screen.
+#[derive(Default)]
+struct PendingOpen(std::sync::Mutex<Vec<String>>);
+
+#[tauri::command]
+fn take_pending_open(state: tauri::State<'_, PendingOpen>) -> Vec<String> {
+    std::mem::take(&mut *state.0.lock().unwrap())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
+    let app = tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![
@@ -28,7 +42,31 @@ pub fn run() {
             ai::upscale_image,
             bg::remove_background,
             update::check_update,
+            take_pending_open,
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .manage(PendingOpen::default())
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application");
+
+    // `build` + `run` rather than the one-shot `run()`: `RunEvent` is the only
+    // place macOS delivers "open these documents".
+    app.run(|app, event| {
+        if let tauri::RunEvent::Opened { urls } = event {
+            use tauri::{Emitter, Manager};
+            let paths: Vec<String> = urls
+                .iter()
+                .filter_map(|u| u.to_file_path().ok())
+                .map(|p| p.to_string_lossy().to_string())
+                .collect();
+            if paths.is_empty() {
+                return;
+            }
+            app.state::<PendingOpen>()
+                .0
+                .lock()
+                .unwrap()
+                .extend(paths.iter().cloned());
+            let _ = app.emit("open-files", paths);
+        }
+    });
 }

@@ -149,8 +149,8 @@ pub async fn upscale_image(app: AppHandle, request: Request<'_>) -> Result<Respo
         .duration_since(std::time::UNIX_EPOCH)
         .map(|d| d.as_millis())
         .unwrap_or(0);
-    let in_path = tmp.join(format!("lil-image-in-{stamp}"));
-    let out_path = tmp.join(format!("lil-image-out-{stamp}.png"));
+    let in_path = tmp.join(format!("lil-edit-in-{stamp}"));
+    let out_path = tmp.join(format!("lil-edit-out-{stamp}.png"));
 
     // ncnn reads the file itself and ignores EXIF orientation, so a photo shot
     // sideways came back rotated away from the original it sits next to. Only

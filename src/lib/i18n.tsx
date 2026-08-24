@@ -9,7 +9,7 @@ import { DICTS, type Dict } from "./strings";
 
 export type Lang = "ru" | "en";
 
-const STORAGE_KEY = "lilimage.lang";
+const STORAGE_KEY = "liledit.lang";
 
 function isLang(v: unknown): v is Lang {
   return v === "ru" || v === "en";

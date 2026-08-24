@@ -671,7 +671,7 @@ async fn download_inner(
         .map_err(|e| format!("mkdir failed: {e}"))?;
 
     let client = reqwest::Client::builder()
-        .user_agent("lil-image/0.1")
+        .user_agent("lil-edit/0.1")
         .build()
         .map_err(|e| e.to_string())?;
 
@@ -899,7 +899,7 @@ fn is_writable(dir: &Path) -> bool {
     if std::fs::create_dir_all(dir).is_err() {
         return false;
     }
-    let probe = dir.join(".lil-image-write-test");
+    let probe = dir.join(".lil-edit-write-test");
     match std::fs::write(&probe, b"") {
         Ok(_) => {
             let _ = std::fs::remove_file(&probe);
@@ -1045,10 +1045,10 @@ mod tests {
     /// A wrong hash has to fail, or the check is decoration.
     #[tokio::test]
     async fn verify_rejects_a_mismatch_and_accepts_a_match() {
-        let dir = std::env::temp_dir().join("lil-image-sha-test");
+        let dir = std::env::temp_dir().join("lil-edit-sha-test");
         std::fs::create_dir_all(&dir).unwrap();
         let f = dir.join("probe.bin");
-        std::fs::write(&f, b"lil image").unwrap();
+        std::fs::write(&f, b"lil edit").unwrap();
         let real = sha256_file(&f).unwrap();
 
         assert!(verify_sha256(&f, &real, "probe").await.is_ok());

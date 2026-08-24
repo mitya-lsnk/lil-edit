@@ -2,5 +2,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    lil_image_lib::run()
+    lil_edit_lib::run()
 }

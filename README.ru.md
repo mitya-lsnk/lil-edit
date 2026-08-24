@@ -1,4 +1,4 @@
-# lil image
+# lil edit
 
 [English](README.md) · **Русский**
 
@@ -9,6 +9,14 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 ![Tauri](https://img.shields.io/badge/built%20with-Tauri%202-24C8DB)
 ![Platforms](https://img.shields.io/badge/platforms-macOS%20·%20Windows%20·%20Linux-555)
+
+
+Часть набора **lil** — небольшие локальные инструменты, каждый делает что-то одно:
+
+| | |
+|---|---|
+| **lil edit** | переделывать: сжатие, удаление фона, апскейл — вы здесь |
+| [lil view](https://github.com/mitya-lsnk/lil-view) | смотреть: быстрый просмотрщик для macOS |
 
 ---
 
@@ -67,7 +75,7 @@ npm run tauri dev    # запустить приложение в дев-реж�
 npm run tauri build
 ```
 
-Сборка под macOS появляется в `src-tauri/target/release/bundle/` — `macos/lil image.app`
+Сборка под macOS появляется в `src-tauri/target/release/bundle/` — `macos/lil edit.app`
 и `.dmg`. Перетащите `.app` в `/Applications` и запускайте из Launchpad или Spotlight,
 как любое приложение: без терминала, дев-сервера и занятого порта.
 
@@ -110,7 +118,7 @@ npm run tauri build
 - waifu2x-ncnn-vulkan (сборка 2025-09) — 35–42 МБ — https://github.com/nihui/waifu2x-ncnn-vulkan
 
 По умолчанию модели кладутся в `<app_data_dir>/models`
-(macOS: `~/Library/Application Support/com.lil.image/models`). Папку можно
+(macOS: `~/Library/Application Support/com.lil.edit/models`). Папку можно
 переназначить: **Настройки → Хранилище моделей → Выбрать папку…**, галочка
 «переносить уже скачанное» перевозит файлы (через copy+delete, так что смена диска
 работает).
@@ -131,7 +139,7 @@ npm run tauri build
 
 | Когда | Куда | Что передаётся |
 |---|---|---|
-| **При запуске** — проверка обновления | `api.github.com` (последний релиз этого репозитория) | Только сам запрос: ваш IP и User-Agent вида `lil-image/<версия>`. Отключается: **Настройки → Проверять обновления при запуске**. |
+| **При запуске** — проверка обновления | `api.github.com` (последний релиз этого репозитория) | Только сам запрос: ваш IP и User-Agent вида `lil-edit/<версия>`. Отключается: **Настройки → Проверять обновления при запуске**. |
 | **Вы нажали «Скачать»** у модели или движка | GitHub Releases / raw.githubusercontent / HuggingFace | Только сам запрос. Никогда не автоматически. |
 | **Вы нажали на ссылку** (страница проекта, описание релиза) | Ваш браузер, не приложение | — |
 
@@ -143,7 +151,7 @@ npm run tauri build
 ## Структура
 
 ```
-lil-image/
+lil-edit/
 ├── src/                      # фронтенд (React)
 │   ├── App.tsx               # оболочка, вкладки
 │   ├── lib/
@@ -196,7 +204,7 @@ lil-image/
 
 ## Лицензии сторонних компонентов
 
-Собственный код lil image — под MIT (см. [LICENSE](LICENSE)). Движки апскейла и
+Собственный код lil edit — под MIT (см. [LICENSE](LICENSE)). Движки апскейла и
 ONNX-модели **скачиваются в рантайме**, и у каждого своя лицензия (Tauri, jSquash, ort,
 Upscayl-ncnn, Real-ESRGAN, waifu2x и веса моделей) — точные условия смотрите по ссылкам
 из реестра выше.

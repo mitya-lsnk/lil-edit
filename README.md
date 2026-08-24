@@ -1,4 +1,4 @@
-# lil image
+# lil edit
 
 **English** · [Русский](README.ru.md)
 
@@ -9,6 +9,13 @@ never uploaded anywhere. See [What goes over the network](#what-goes-over-the-ne
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 ![Tauri](https://img.shields.io/badge/built%20with-Tauri%202-24C8DB)
 ![Platforms](https://img.shields.io/badge/platforms-macOS%20·%20Windows%20·%20Linux-555)
+
+Part of the **lil** set — small local tools that each do one thing:
+
+| | |
+|---|---|
+| **lil edit** | reshape it: compress, cut out the background, upscale — you are here |
+| [lil view](https://github.com/mitya-lsnk/lil-view) | look at it: a fast macOS image viewer |
 
 ---
 
@@ -67,7 +74,7 @@ Build a release `.app` / `.dmg` / `.exe`:
 npm run tauri build
 ```
 
-The macOS build lands in `src-tauri/target/release/bundle/` — `macos/lil image.app`
+The macOS build lands in `src-tauri/target/release/bundle/` — `macos/lil edit.app`
 plus a `.dmg`. Drag the `.app` into `/Applications` and launch it from Launchpad or
 Spotlight like any other app: no terminal, no dev server, no port to keep free.
 
@@ -109,7 +116,7 @@ direct and were verified 2026-07-19.
 - waifu2x-ncnn-vulkan (Sep 2025 build) — 35–42 MB — https://github.com/nihui/waifu2x-ncnn-vulkan
 
 By default models go to `<app_data_dir>/models` (macOS:
-`~/Library/Application Support/com.lil.image/models`). The folder is configurable:
+`~/Library/Application Support/com.lil.edit/models`). The folder is configurable:
 **Settings → Model storage → Choose folder…**; the "move what's already downloaded"
 checkbox relocates existing files (via copy+delete, so switching drives works).
 
@@ -129,7 +136,7 @@ all of them to public, pinned URLs:
 
 | When | Where | What is sent |
 |---|---|---|
-| **On launch** — update check | `api.github.com` (this repo's latest release) | Nothing but the request itself: your IP and a `lil-image/<version>` User-Agent. Can be turned off: **Settings → Check for updates on launch**. |
+| **On launch** — update check | `api.github.com` (this repo's latest release) | Nothing but the request itself: your IP and a `lil-edit/<version>` User-Agent. Can be turned off: **Settings → Check for updates on launch**. |
 | **You click Download** on a model or engine | GitHub Releases / raw.githubusercontent / HuggingFace | Nothing but the request. Never automatic. |
 | **You click a link** (project page, release notes) | Your browser, not the app | — |
 
@@ -141,7 +148,7 @@ downloaded it never opens a connection on its own.
 ## Project structure
 
 ```
-lil-image/
+lil-edit/
 ├── src/                      # frontend (React)
 │   ├── App.tsx               # shell, tabs
 │   ├── lib/
@@ -194,7 +201,7 @@ Contributions are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Third-party licenses
 
-lil image's own code is MIT (see [LICENSE](LICENSE)). The upscale engines and ONNX
+lil edit's own code is MIT (see [LICENSE](LICENSE)). The upscale engines and ONNX
 models are **downloaded at runtime** and each carries its own license (Tauri, jSquash,
 ort, Upscayl-ncnn, Real-ESRGAN, waifu2x, and the model weights) — follow the source
 links in the registry above for the exact terms.

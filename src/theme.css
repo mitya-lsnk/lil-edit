@@ -1,4 +1,4 @@
-/* lil image — design system with swappable skins (self-hosted fonts, offline-safe)
+/* lil edit — design system with swappable skins (self-hosted fonts, offline-safe)
  *
  * Everything is driven by semantic CSS variables. The default `:root` values are
  * the neo-brutalism skin; src/skins.css overrides the same variables (and a few

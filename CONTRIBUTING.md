@@ -1,4 +1,4 @@
-# Contributing to lil image
+# Contributing to lil edit
 
 Thanks for taking the time to contribute! This is a small project, so the process is
 light.

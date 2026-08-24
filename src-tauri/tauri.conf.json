@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "lil image",
-  "version": "0.1.6",
-  "identifier": "com.lil.image",
+  "productName": "lil edit",
+  "version": "0.1.7",
+  "identifier": "com.lil.edit",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "lil image",
+        "title": "lil edit",
         "width": 1100,
         "height": 780,
         "minWidth": 880,
@@ -34,6 +34,98 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ]
+    ],
+    "fileAssociations": [
+      {
+        "ext": [
+          "jpg",
+          "jpeg"
+        ],
+        "name": "JPEG image",
+        "role": "Editor",
+        "rank": "Alternate",
+        "mimeType": "image/jpeg",
+        "contentTypes": [
+          "public.jpeg"
+        ]
+      },
+      {
+        "ext": [
+          "png"
+        ],
+        "name": "PNG image",
+        "role": "Editor",
+        "rank": "Alternate",
+        "mimeType": "image/png",
+        "contentTypes": [
+          "public.png"
+        ]
+      },
+      {
+        "ext": [
+          "webp"
+        ],
+        "name": "WebP image",
+        "role": "Editor",
+        "rank": "Alternate",
+        "mimeType": "image/webp",
+        "contentTypes": [
+          "org.webmproject.webp"
+        ]
+      },
+      {
+        "ext": [
+          "avif"
+        ],
+        "name": "AVIF image",
+        "role": "Editor",
+        "rank": "Alternate",
+        "mimeType": "image/avif",
+        "contentTypes": [
+          "public.avif"
+        ]
+      },
+      {
+        "ext": [
+          "gif"
+        ],
+        "name": "GIF image",
+        "role": "Editor",
+        "rank": "Alternate",
+        "mimeType": "image/gif",
+        "contentTypes": [
+          "com.compuserve.gif"
+        ]
+      },
+      {
+        "ext": [
+          "bmp"
+        ],
+        "name": "BMP image",
+        "role": "Editor",
+        "rank": "Alternate",
+        "mimeType": "image/bmp",
+        "contentTypes": [
+          "com.microsoft.bmp"
+        ]
+      },
+      {
+        "ext": [
+          "tif",
+          "tiff"
+        ],
+        "name": "TIFF image",
+        "role": "Editor",
+        "rank": "Alternate",
+        "mimeType": "image/tiff",
+        "contentTypes": [
+          "public.tiff"
+        ]
+      }
+    ],
+    "macOS": {
+      "signingIdentity": "-",
+      "hardenedRuntime": false
+    }
   }
 }

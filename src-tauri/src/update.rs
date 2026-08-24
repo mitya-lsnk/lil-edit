@@ -5,7 +5,7 @@
 
 use serde::Serialize;
 
-const REPO: &str = "mitya-lsnk/lil-image";
+const REPO: &str = "mitya-lsnk/lil-edit";
 
 #[derive(Serialize)]
 pub struct UpdateInfo {
@@ -73,7 +73,7 @@ fn pick_mac_asset(assets: &[serde_json::Value]) -> Option<String> {
 pub async fn check_update() -> Result<UpdateInfo, String> {
     let current = env!("CARGO_PKG_VERSION").to_string();
     let client = reqwest::Client::builder()
-        .user_agent(format!("lil-image/{current}"))
+        .user_agent(format!("lil-edit/{current}"))
         .build()
         .map_err(|e| e.to_string())?;
 

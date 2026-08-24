@@ -2151,8 +2151,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "lil-image"
-version = "0.1.6"
+name = "lil-edit"
+version = "0.1.7"
 dependencies = [
  "flate2",
  "futures-util",
