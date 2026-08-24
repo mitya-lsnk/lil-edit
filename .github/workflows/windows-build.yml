@@ -19,12 +19,6 @@ jobs:
   build:
     runs-on: windows-latest
 
-    # src-tauri/.cargo/config.toml redirects the build output to
-    # `target.noindex`, which keeps Spotlight off ~11 GB of intermediates on a
-    # Mac and means nothing anywhere else. The env var outranks the config
-    # file, so CI keeps the plain `target/` the paths below expect.
-    env:
-      CARGO_TARGET_DIR: target
 
     steps:
       - name: Checkout

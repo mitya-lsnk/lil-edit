@@ -50,8 +50,13 @@ pub fn run() {
 
     // `build` + `run` rather than the one-shot `run()`: `RunEvent` is the only
     // place macOS delivers "open these documents".
-    app.run(|app, event| {
-        if let tauri::RunEvent::Opened { urls } = event {
+    //
+    // `RunEvent::Opened` exists only on macOS and iOS — it is not a variant at
+    // all elsewhere, so the arm has to be compiled out rather than just left
+    // unmatched, or the Windows build fails to compile.
+    app.run(|_app, _event| {
+        #[cfg(target_os = "macos")]
+        if let tauri::RunEvent::Opened { urls } = _event {
             use tauri::{Emitter, Manager};
             let paths: Vec<String> = urls
                 .iter()
@@ -61,12 +66,12 @@ pub fn run() {
             if paths.is_empty() {
                 return;
             }
-            app.state::<PendingOpen>()
+            _app.state::<PendingOpen>()
                 .0
                 .lock()
                 .unwrap()
                 .extend(paths.iter().cloned());
-            let _ = app.emit("open-files", paths);
+            let _ = _app.emit("open-files", paths);
         }
     });
 }
