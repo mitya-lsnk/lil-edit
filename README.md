@@ -16,6 +16,7 @@ Part of the **lil** set — small local tools that each do one thing:
 |---|---|
 | **lil edit** | reshape it: compress, cut out the background, upscale — you are here |
 | [lil view](https://github.com/mitya-lsnk/lil-view) | look at it: a fast macOS image viewer |
+| [lil download](https://github.com/mitya-lsnk/lil-download) | fetch it: video and audio from anywhere yt-dlp reaches |
 
 ---
 

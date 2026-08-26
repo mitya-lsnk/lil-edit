@@ -17,6 +17,7 @@
 |---|---|
 | **lil edit** | переделывать: сжатие, удаление фона, апскейл — вы здесь |
 | [lil view](https://github.com/mitya-lsnk/lil-view) | смотреть: быстрый просмотрщик для macOS |
+| [lil download](https://github.com/mitya-lsnk/lil-download) | приносить: видео и звук отовсюду, куда дотягивается yt-dlp |
 
 ---
 
