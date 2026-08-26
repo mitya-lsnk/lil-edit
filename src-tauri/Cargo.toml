@@ -1,6 +1,6 @@
 [package]
 name = "lil-edit"
-version = "0.1.7"
+version = "0.2.0"
 description = "lil edit — local image compression, background removal and upscaling"
 authors = ["lsnk"]
 license = "MIT"

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { Icon } from "./Icon";
 import { onDragHover, pickImage, type Picked } from "../lib/intake";
 import { hasTauri } from "../lib/tauri";
 import { useStrings } from "../lib/i18n";
@@ -103,7 +104,7 @@ export function HomeBody({ file, onFile, onPick, onBatch, onContinue }: Props) {
           <div className="dz-sub">{s.home.dropSubClick}</div>
         </div>
         <button className="b-btn home-batch" onClick={onBatch}>
-          ▦ {s.home.batchEntry}
+          <Icon name="grid" size={14} /> {s.home.batchEntry}
         </button>
       </div>
     );
@@ -128,7 +129,7 @@ export function HomeBody({ file, onFile, onPick, onBatch, onContinue }: Props) {
           {s.home.replace}
         </button>
         <button className="b-btn" onClick={onBatch}>
-          ▦ {s.batch.tab}
+          <Icon name="grid" size={14} /> {s.batch.tab}
         </button>
       </div>
 

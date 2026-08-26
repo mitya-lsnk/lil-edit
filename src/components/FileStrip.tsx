@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Icon } from "./Icon";
 import { useStrings } from "../lib/i18n";
 
 /**
@@ -36,7 +37,7 @@ export function FileStrip({
         {s.home.replace}
       </button>
       <button className="b-btn" onClick={onBatch}>
-        ▦ {s.batch.tab}
+        <Icon name="grid" size={14} /> {s.batch.tab}
       </button>
     </div>
   );

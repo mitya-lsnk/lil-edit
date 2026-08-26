@@ -222,6 +222,10 @@ const ru = {
   },
   settings: {
     appearance: "Оформление",
+    tabModels: "Модели",
+    tabStorage: "Хранилище",
+    tabLook: "Оформление",
+    tabAbout: "О программе",
     appearanceLead:
       "Скин меняет весь интерфейс — цвета, шрифты, формы и анимации. Выбор запоминается.",
     theme: "Тема",
@@ -280,6 +284,8 @@ const ru = {
     studio: { name: "lil studio" },
   },
   mode: {
+    light: "Светлая",
+    dark: "Тёмная",
     toLightTitle: "Светлая тема",
     toDarkTitle: "Тёмная тема",
     toLightAria: "Включить светлую тему",
@@ -613,6 +619,10 @@ const en: Dict = {
   },
   settings: {
     appearance: "Appearance",
+    tabModels: "Models",
+    tabStorage: "Storage",
+    tabLook: "Appearance",
+    tabAbout: "About",
     appearanceLead:
       "A skin changes the whole interface — colors, fonts, shapes and animations. Your choice is remembered.",
     theme: "Theme",
@@ -671,6 +681,8 @@ const en: Dict = {
     studio: { name: "lil studio" },
   },
   mode: {
+    light: "Light",
+    dark: "Dark",
     toLightTitle: "Light theme",
     toDarkTitle: "Dark theme",
     toLightAria: "Switch to light theme",

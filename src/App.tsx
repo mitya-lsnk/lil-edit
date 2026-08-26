@@ -11,6 +11,7 @@ import { BatchPanel } from "./components/BatchPanel";
 import { FaqScreen } from "./components/FaqScreen";
 import { SettingsScreen } from "./components/SettingsScreen";
 import { LanguagePicker } from "./components/LanguagePicker";
+import { Icon } from "./components/Icon";
 import { ModeToggle } from "./components/ModeToggle";
 import { FileStrip } from "./components/FileStrip";
 import { Toast } from "./components/Toast";
@@ -186,7 +187,7 @@ function App() {
           {/* Explicit way back — closes an overlay, else goes home. */}
           {(aux || onTool) && (
             <button className="back" onClick={goBack}>
-              ← {s.app.back}
+              <Icon name="prev" size={14} /> {s.app.back}
             </button>
           )}
           {aux && <span className="title-mid">{auxTitle}</span>}
@@ -224,7 +225,7 @@ function App() {
             aria-label={s.app.settingsAria}
             title={s.app.settingsAria}
           >
-            ⚙
+            <Icon name="settings" />
             {update?.available && (
               <span className="update-dot" aria-label={s.settings.update.badgeAria} />
             )}

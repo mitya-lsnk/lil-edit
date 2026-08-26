@@ -16,6 +16,7 @@ import { MattePicker } from "./MattePicker";
 import { type Matte, matteStyle } from "../lib/matteBg";
 import type { Tool } from "./HomeScreen";
 import { useStrings } from "../lib/i18n";
+import { Icon } from "./Icon";
 
 interface Props {
   file: File;
@@ -346,8 +347,12 @@ export function EditPanel({ file, srcDir, onSendTo, onSaved }: Props) {
         /* ---------- crop: one merged block ---------- */
         <div className="t-controls edit-crop-merged">
           <div className="edit-ops">
-            <button className="b-btn edit-icn" title={s.edit.rotateL} onClick={() => doRotate(-90)}>↺</button>
-            <button className="b-btn edit-icn" title={s.edit.rotateR} onClick={() => doRotate(90)}>↻</button>
+            <button className="b-btn edit-icn" title={s.edit.rotateL} onClick={() => doRotate(-90)}>
+              <Icon name="rotateLeft" size={15} />
+            </button>
+            <button className="b-btn edit-icn" title={s.edit.rotateR} onClick={() => doRotate(90)}>
+              <Icon name="rotateRight" size={15} />
+            </button>
             <button className="b-btn edit-icn" title={s.edit.flipH} onClick={() => doFlip("h")}>⇋</button>
             <button className="b-btn edit-icn" title={s.edit.flipV} onClick={() => doFlip("v")}>⥯</button>
           </div>
@@ -372,8 +377,12 @@ export function EditPanel({ file, srcDir, onSendTo, onSaved }: Props) {
           <span className="edit-dims">{outW} × {outH}</span>
           <MattePicker value={matte} onChange={setMatte} />
           <span className="head-spacer" style={{ flex: 1 }} />
-          <button className="b-btn edit-icn" title={s.edit.undo} disabled={!canUndo} onClick={undo}>⟲</button>
-          <button className="b-btn edit-icn" title={s.edit.redo} disabled={!canRedo} onClick={redo}>⟳</button>
+          <button className="b-btn edit-icn" title={s.edit.undo} disabled={!canUndo} onClick={undo}>
+              <Icon name="undo" size={15} />
+            </button>
+          <button className="b-btn edit-icn" title={s.edit.redo} disabled={!canRedo} onClick={redo}>
+              <Icon name="redo" size={15} />
+            </button>
           <button className="b-btn" onClick={() => setCropping(false)}>{s.edit.cancel}</button>
           <button className="b-btn b-btn--solid" onClick={applyCrop}>{s.edit.apply}</button>
         </div>
@@ -382,8 +391,12 @@ export function EditPanel({ file, srcDir, onSendTo, onSaved }: Props) {
         <>
           <div className="t-controls edit-bar">
             <div className="edit-ops">
-              <button className="b-btn edit-icn" title={s.edit.rotateL} onClick={() => doRotate(-90)}>↺</button>
-              <button className="b-btn edit-icn" title={s.edit.rotateR} onClick={() => doRotate(90)}>↻</button>
+              <button className="b-btn edit-icn" title={s.edit.rotateL} onClick={() => doRotate(-90)}>
+              <Icon name="rotateLeft" size={15} />
+            </button>
+              <button className="b-btn edit-icn" title={s.edit.rotateR} onClick={() => doRotate(90)}>
+              <Icon name="rotateRight" size={15} />
+            </button>
               <button className="b-btn edit-icn" title={s.edit.flipH} onClick={() => doFlip("h")}>⇋</button>
               <button className="b-btn edit-icn" title={s.edit.flipV} onClick={() => doFlip("v")}>⥯</button>
             </div>
@@ -391,8 +404,12 @@ export function EditPanel({ file, srcDir, onSendTo, onSaved }: Props) {
             <MattePicker value={matte} onChange={setMatte} />
             <span className="head-spacer" style={{ flex: 1 }} />
             <div className="edit-ops">
-              <button className="b-btn edit-icn" title={s.edit.undo} disabled={!canUndo} onClick={undo}>⟲</button>
-              <button className="b-btn edit-icn" title={s.edit.redo} disabled={!canRedo} onClick={redo}>⟳</button>
+              <button className="b-btn edit-icn" title={s.edit.undo} disabled={!canUndo} onClick={undo}>
+              <Icon name="undo" size={15} />
+            </button>
+              <button className="b-btn edit-icn" title={s.edit.redo} disabled={!canRedo} onClick={redo}>
+              <Icon name="redo" size={15} />
+            </button>
               <button className="b-btn" disabled={!canUndo} onClick={reset}>{s.edit.reset}</button>
             </div>
           </div>

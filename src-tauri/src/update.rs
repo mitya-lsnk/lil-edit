@@ -17,7 +17,7 @@ pub struct UpdateInfo {
     notes: String,
     /// The release page — always present, used as the download fallback.
     url: String,
-    /// Direct download URL for a macOS asset (.dmg preferred), when one exists.
+    /// Direct download for this platform, when the release carries one.
     asset: Option<String>,
 }
 
@@ -37,9 +37,10 @@ fn is_newer(latest: &str, current: &str) -> bool {
     }
 }
 
-// Pick the most sensible macOS download: a .dmg first, then any mac-looking
-// archive. Returns the browser download URL.
-fn pick_mac_asset(assets: &[serde_json::Value]) -> Option<String> {
+// Pick the download that suits the system this copy is running on. lil edit is
+// macOS-only, but lil view and lil download publish for three platforms, and
+// handing a Windows user a .dmg is worse than handing them the release page.
+fn pick_asset(assets: &[serde_json::Value]) -> Option<String> {
     let url = |a: &serde_json::Value| {
         a.get("browser_download_url")
             .and_then(|v| v.as_str())
@@ -51,22 +52,22 @@ fn pick_mac_asset(assets: &[serde_json::Value]) -> Option<String> {
             .unwrap_or("")
             .to_lowercase()
     };
-    assets
-        .iter()
-        .find(|a| name(a).ends_with(".dmg"))
-        .and_then(&url)
-        .or_else(|| {
-            assets
-                .iter()
-                .find(|a| {
-                    let n = name(a);
-                    n.contains("mac")
-                        || n.contains("darwin")
-                        || n.contains("aarch64")
-                        || n.ends_with(".app.tar.gz")
-                })
-                .and_then(&url)
-        })
+
+    // Most specific first: the installer for this platform, then anything that
+    // merely looks like it belongs here.
+    let exact: &[&str] = if cfg!(target_os = "macos") {
+        &[".dmg"]
+    } else if cfg!(windows) {
+        &["-setup.exe", ".msi"]
+    } else {
+        &[".appimage", ".deb", ".rpm"]
+    };
+    for ext in exact {
+        if let Some(a) = assets.iter().find(|a| name(a).ends_with(ext)) {
+            return url(a);
+        }
+    }
+    None
 }
 
 #[tauri::command]
@@ -115,7 +116,7 @@ pub async fn check_update() -> Result<UpdateInfo, String> {
     let asset = json
         .get("assets")
         .and_then(|v| v.as_array())
-        .and_then(|a| pick_mac_asset(a));
+        .and_then(|a| pick_asset(a));
 
     Ok(UpdateInfo {
         available: is_newer(&latest, &current),

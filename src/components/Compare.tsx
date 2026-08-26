@@ -7,6 +7,7 @@ import {
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
+import { Icon } from "./Icon";
 import { useStrings } from "../lib/i18n";
 import { MattePicker } from "./MattePicker";
 import { type Matte, MATTE_SOLID, matteStyle } from "../lib/matteBg";
@@ -651,7 +652,7 @@ export function Compare({
           onClick={resetView}
           title={s.compare.zoomReset}
         >
-          {view.z.toFixed(1)}× ✕
+          {view.z.toFixed(1)}× <Icon name="close" size={12} />
         </button>
       )}
 

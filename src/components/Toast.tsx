@@ -1,4 +1,5 @@
 import { useEffect, useMemo } from "react";
+import { Icon } from "./Icon";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { splitPath } from "../lib/intake";
 import { hasTauri } from "../lib/tauri";
@@ -45,7 +46,7 @@ export function Toast({
     <div className="toast" role="status">
       <div className="toast-body">
         <span className="toast-check" aria-hidden>
-          ✓
+          <Icon name="ok" size={14} />
         </span>
         <div className="toast-text">
           <div className="toast-title">{title}</div>

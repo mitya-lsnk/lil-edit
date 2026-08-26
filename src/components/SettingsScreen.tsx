@@ -2,7 +2,10 @@ import { useEffect, useState } from "react";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { open } from "@tauri-apps/plugin-dialog";
 import { SKINS, useSkin } from "../lib/skin";
+import { Icon } from "./Icon";
 import { ModelManager } from "./ModelManager";
+import { ModeChoice } from "./ModeToggle";
+import { SkinPreview } from "./SkinPreview";
 import {
   cacheInfo,
   clearCache,
@@ -30,6 +33,8 @@ interface SettingsProps {
   onCheck: () => void;
 }
 
+type Tab = "models" | "storage" | "look" | "about";
+
 export function SettingsScreen({
   onOpenModels,
   update,
@@ -39,6 +44,7 @@ export function SettingsScreen({
 }: SettingsProps) {
   const str = useStrings();
   const { skin, setSkin } = useSkin();
+  const [tab, setTab] = useState<Tab>("models");
   const [cache, setCache] = useState<CacheInfo | null>(null);
   const [clearing, setClearing] = useState(false);
   const [confirm, setConfirm] = useState(false);
@@ -100,10 +106,35 @@ export function SettingsScreen({
 
   return (
     <div className="settings">
+      {/* Tabs rather than one page that scrolls past six sections. Order follows
+          need: the models first, because without them two of the three tools do
+          nothing, and appearance late, because it is a once-a-month decision.
+          Same shape as lil view and lil download. */}
+      <nav className="set-tabs">
+        {(
+          [
+            ["models", str.settings.tabModels],
+            ["storage", str.settings.tabStorage],
+            ["look", str.settings.tabLook],
+            ["about", str.settings.tabAbout],
+          ] as [Tab, string][]
+        ).map(([id, label]) => (
+          <button
+            key={id}
+            className={`b-btn ${tab === id ? "b-btn--solid" : ""}`}
+            onClick={() => setTab(id)}
+          >
+            {label}
+          </button>
+        ))}
+      </nav>
+
       {/* -------- Appearance -------- */}
+      {tab === "look" && (
       <section className="set-sec">
         <h3 className="set-h">{str.settings.appearance}</h3>
         <p className="set-lead">{str.settings.appearanceLead}</p>
+        <ModeChoice label={str.settings.theme} />
         <div className="skin-grid">
           {SKINS.map((sk) => {
             const meta = str.skins[sk.id];
@@ -127,9 +158,20 @@ export function SettingsScreen({
             );
           })}
         </div>
+        <SkinPreview
+          name="lil edit"
+          words={{
+            primary: str.settings.pickFolder,
+            secondary: str.settings.openFolder,
+            accent: str.settings.clearCache,
+            check: str.settings.moveExisting,
+          }}
+        />
       </section>
+      )}
 
       {/* -------- Cache -------- */}
+      {tab === "storage" && (
       <section className="set-sec">
         <h3 className="set-h">{str.settings.storage}</h3>
         {!tauri ? (
@@ -230,8 +272,11 @@ export function SettingsScreen({
           </>
         )}
       </section>
+      )}
 
       {/* -------- Models -------- */}
+      {tab === "models" && (
+      <>
       <section className="set-sec">
         <h3 className="set-h">{str.settings.bgModels}</h3>
         {tauri ? (
@@ -253,11 +298,14 @@ export function SettingsScreen({
       {/* -------- Models info (was the header "Models" button) -------- */}
       <section className="set-sec">
         <button className="b-btn" onClick={onOpenModels}>
-          ? {str.settings.modelsFaq}
+          <Icon name="info" size={14} /> {str.settings.modelsFaq}
         </button>
       </section>
+      </>
+      )}
 
       {/* -------- About -------- */}
+      {tab === "about" && (
       <section className="set-sec">
         <h3 className="set-h">{str.settings.aboutTitle}</h3>
         {str.settings.about}
@@ -333,6 +381,7 @@ export function SettingsScreen({
           </div>
         )}
       </section>
+      )}
     </div>
   );
 }
