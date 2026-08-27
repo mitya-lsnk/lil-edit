@@ -46,11 +46,6 @@
   --font-head: "Science Gothic", "Space Grotesk", system-ui, sans-serif;
 }
 
-/* light header with ink rule (not the brutalist black bar) */
-[data-skin="riso"] .app-header {
-  background: var(--paper);
-  border-bottom: var(--bd);
-}
 [data-skin="riso"] .app-header .logo {
   color: var(--accent);
 }
@@ -62,8 +57,6 @@
 [data-skin="riso"] .app-header .title-mid {
   color: var(--ink);
 }
-/* riso/te headers are light, so the back button needs a dark border, not the
-   faint white one from the (dark) brutalist header. */
 [data-skin="riso"] .app-header .back {
   border-color: var(--ink);
 }
@@ -254,10 +247,9 @@
   text-shadow: none;
 }
 
-/* light hardware header */
+/* the device skin keeps its own slightly warmer bar */
 [data-skin="te"] .app-header {
   background: #efeee9;
-  border-bottom: 1px solid var(--line);
 }
 [data-skin="te"] .app-header .logo {
   color: var(--ink);

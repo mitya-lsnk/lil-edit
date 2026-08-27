@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { open } from "@tauri-apps/plugin-dialog";
-import { SKINS, useSkin } from "../lib/skin";
 import { Icon } from "./Icon";
 import { ModelManager } from "./ModelManager";
 import { ModeChoice } from "./ModeToggle";
+import { SkinCards } from "./SkinCards";
 import { SkinPreview } from "./SkinPreview";
 import {
   cacheInfo,
@@ -43,7 +43,6 @@ export function SettingsScreen({
   onCheck,
 }: SettingsProps) {
   const str = useStrings();
-  const { skin, setSkin } = useSkin();
   const [tab, setTab] = useState<Tab>("models");
   const [cache, setCache] = useState<CacheInfo | null>(null);
   const [clearing, setClearing] = useState(false);
@@ -134,29 +133,13 @@ export function SettingsScreen({
       <section className="set-sec">
         <h3 className="set-h">{str.settings.appearance}</h3>
         <p className="set-lead">{str.settings.appearanceLead}</p>
-        <ModeChoice label={str.settings.theme} />
-        <div className="skin-grid">
-          {SKINS.map((sk) => {
-            const meta = str.skins[sk.id];
-            return (
-              <button
-                key={sk.id}
-                className={`skin-card ${skin === sk.id ? "active" : ""}`}
-                onClick={() => setSkin(sk.id)}
-              >
-                <span
-                  className="skin-card-sw"
-                  style={{
-                    background: `linear-gradient(135deg, ${sk.swatch[0]} 0 50%, ${sk.swatch[1]} 50% 100%)`,
-                  }}
-                />
-                <span className="skin-card-name">{meta.name}</span>
-                {skin === sk.id && (
-                  <span className="skin-card-on">{str.settings.chosen}</span>
-                )}
-              </button>
-            );
-          })}
+        <div className="settings-field">
+          <span className="set-lbl">{str.settings.theme}</span>
+          <ModeChoice label={str.settings.theme} />
+        </div>
+        <div className="settings-field">
+          <span className="set-lbl">{str.settings.skin}</span>
+          <SkinCards />
         </div>
         <SkinPreview
           name="lil edit"

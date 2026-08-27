@@ -8,28 +8,33 @@
 }
 
 /* Full-width header bar */
+/* One header recipe across the set: the surface colour, the same padding, the
+   same border, the wordmark at the same size. Two of the four skins already
+   overrode the black bar to a light one, which is a fair sign the black bar
+   was the odd one out rather than the rule. Skins still tint it; they no
+   longer have to undo it. */
 .app-header {
   position: sticky;
   top: 0;
   z-index: 20;
-  background: var(--ink);
-  padding: 16px 28px;
+  background: var(--surface);
+  padding: 10px 16px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 16px;
-  border-bottom: var(--bd-thick);
+  gap: 12px;
+  border-bottom: var(--bd);
 }
 .app-header .logo {
   font-family: var(--font-display);
-  font-size: 24px;
-  color: var(--yellow);
+  font-size: 18px;
+  color: var(--ink);
   letter-spacing: 0.5px;
 }
 .app-header .logo-sub {
   font-family: var(--font-mono);
   font-size: 11px;
-  color: #fff;
+  color: var(--muted);
   letter-spacing: 2px;
   text-transform: uppercase;
   opacity: 0.8;
@@ -75,23 +80,11 @@
   line-height: 1;
   cursor: pointer;
 }
-/* Theme and language now share the `help` treatment rather than each having
-   their own. The header sits on `--ink`, so a control here is an outline on a
-   dark field — a default `.b-btn`, with its light surface, would read as a
-   sticker pasted onto the bar. */
+/* The bar is a light surface now, so these are ordinary buttons — the same
+   ones lil view and lil download put in the same corner. */
 .head-right .b-btn {
-  color: var(--accent);
-  background: transparent;
-  border-color: var(--accent);
   text-transform: none;
   letter-spacing: 0.05em;
-  box-shadow: none;
-}
-.head-right .b-btn:hover {
-  transform: none;
-  box-shadow: none;
-  background: var(--accent);
-  color: var(--accent-ink);
 }
 
 .app-header .help {
@@ -2567,4 +2560,43 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+
+/* ------------------------------------------------- settings: labelled rows */
+
+/* The light/dark toggle sat directly on the skin grid with nothing between
+   them, so the two choices read as one control. */
+.settings-field {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+.settings-field:last-of-type {
+  margin-bottom: 4px;
+}
+.settings-field > .skin-grid {
+  width: 100%;
+}
+.set-lbl {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* Same shared grid as lil view and lil download; only the sizes that used to
+   be hard-coded here are dropped. */
+.skin-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 14px;
+}
+.skin-card-on {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }

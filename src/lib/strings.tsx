@@ -229,8 +229,9 @@ const ru = {
     appearanceLead:
       "Скин меняет весь интерфейс — цвета, шрифты, формы и анимации. Выбор запоминается.",
     theme: "Тема",
+    skin: "Стиль",
     modelsFaq: "Какие модели читает программа",
-    chosen: "✓ выбран",
+    chosen: "Выбран",
     storage: "Хранилище моделей",
     cacheBrowserNote: "Управление кешем доступно в приложении (не в браузере).",
     onDisk: "на диске",
@@ -626,8 +627,9 @@ const en: Dict = {
     appearanceLead:
       "A skin changes the whole interface — colors, fonts, shapes and animations. Your choice is remembered.",
     theme: "Theme",
+    skin: "Style",
     modelsFaq: "Which models the program reads",
-    chosen: "✓ selected",
+    chosen: "Selected",
     storage: "Model storage",
     cacheBrowserNote: "Cache management is available in the app (not the browser).",
     onDisk: "on disk",
