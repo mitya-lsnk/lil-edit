@@ -1,11 +1,9 @@
 import { useEffect, useState } from "react";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { open } from "@tauri-apps/plugin-dialog";
+import { AppearancePanel } from "./AppearancePanel";
 import { Icon } from "./Icon";
 import { ModelManager } from "./ModelManager";
-import { ModeChoice } from "./ModeToggle";
-import { SkinCards } from "./SkinCards";
-import { SkinPreview } from "./SkinPreview";
 import {
   cacheInfo,
   clearCache,
@@ -130,18 +128,7 @@ export function SettingsScreen({
 
       {/* -------- Appearance -------- */}
       {tab === "look" && (
-      <section className="set-sec">
-        <h3 className="set-h">{str.settings.appearance}</h3>
-        <p className="set-lead">{str.settings.appearanceLead}</p>
-        <div className="settings-field">
-          <span className="set-lbl">{str.settings.theme}</span>
-          <ModeChoice label={str.settings.theme} />
-        </div>
-        <div className="settings-field">
-          <span className="set-lbl">{str.settings.skin}</span>
-          <SkinCards />
-        </div>
-        <SkinPreview
+        <AppearancePanel
           name="lil edit"
           words={{
             primary: str.settings.pickFolder,
@@ -150,7 +137,6 @@ export function SettingsScreen({
             check: str.settings.moveExisting,
           }}
         />
-      </section>
       )}
 
       {/* -------- Cache -------- */}

@@ -279,10 +279,10 @@ const ru = {
     },
   },
   skins: {
+    studio: { name: "lil studio" },
     brutal: { name: "Нео-брутализм" },
     riso: { name: "Рисо-поп" },
     te: { name: "Девайс" },
-    studio: { name: "lil studio" },
   },
   mode: {
     light: "Светлая",
@@ -677,10 +677,10 @@ const en: Dict = {
     },
   },
   skins: {
+    studio: { name: "lil studio" },
     brutal: { name: "Neo-brutalism" },
     riso: { name: "Riso-pop" },
     te: { name: "Device" },
-    studio: { name: "lil studio" },
   },
   mode: {
     light: "Light",
