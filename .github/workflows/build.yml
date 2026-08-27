@@ -18,7 +18,7 @@ jobs:
           - platform: windows-latest
             args: ""
           - platform: macos-latest
-            args: "--target aarch64-apple-darwin"
+            args: "--target universal-apple-darwin"
     runs-on: ${{ matrix.platform }}
     permissions:
       contents: write
@@ -50,7 +50,7 @@ jobs:
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin' || '' }}
+          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
 
       - name: Cache Rust
         uses: swatinem/rust-cache@v2
