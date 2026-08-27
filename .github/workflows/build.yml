@@ -18,7 +18,13 @@ jobs:
           - platform: windows-latest
             args: ""
           - platform: macos-latest
-            args: "--target universal-apple-darwin"
+            # arm64 only, and it cannot be otherwise: `ort` publishes no
+            # prebuilt onnxruntime for x86_64-apple-darwin, so a universal
+            # build dies in ort-sys' build script. Making one would mean
+            # compiling ONNX Runtime from source for the Intel half. Verified
+            # 27.08.2026 against ort 2.0.0-rc.12 — don't try again without
+            # checking that first.
+            args: "--target aarch64-apple-darwin"
     runs-on: ${{ matrix.platform }}
     permissions:
       contents: write
@@ -50,7 +56,7 @@ jobs:
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin' || '' }}
 
       - name: Cache Rust
         uses: swatinem/rust-cache@v2
