@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { open } from "@tauri-apps/plugin-dialog";
+import { AboutPanel } from "./AboutPanel";
 import { AppearancePanel } from "./AppearancePanel";
 import { Icon } from "./Icon";
 import { ModelManager } from "./ModelManager";
@@ -279,13 +280,7 @@ export function SettingsScreen({
 
       {/* -------- About -------- */}
       {tab === "about" && (
-      <section className="set-sec">
-        <h3 className="set-h">{str.settings.aboutTitle}</h3>
-        {str.settings.about}
-        <p className="set-version">
-          {str.settings.version} {__APP_VERSION__}
-        </p>
-
+      <AboutPanel about={str.settings.about}>
         {tauri && (
           <div className="set-update">
             <label className="t-check">
@@ -353,7 +348,7 @@ export function SettingsScreen({
             )}
           </div>
         )}
-      </section>
+      </AboutPanel>
       )}
     </div>
   );

@@ -254,13 +254,10 @@ const ru = {
     bgModels: "Модели удаления фона",
     upscaleEngines: "Движки апскейла",
     inApp: "Доступно в приложении.",
-    aboutTitle: "О программе",
-    version: "Версия",
     about: (
-      <p className="set-lead">
-        <b>lil edit</b> — локальный набор инструментов для изображений: сжатие,
-        апскейл и удаление фона. Всё считается на вашем компьютере, без отправки
-        в сеть.
+      <p>
+        Локальный набор инструментов для изображений: сжатие, апскейл и удаление
+        фона. Всё считается на вашем компьютере, без отправки в сеть.
       </p>
     ),
     update: {
@@ -652,13 +649,10 @@ const en: Dict = {
     bgModels: "Background-removal models",
     upscaleEngines: "Upscale engines",
     inApp: "Available in the app.",
-    aboutTitle: "About",
-    version: "Version",
     about: (
-      <p className="set-lead">
-        <b>lil edit</b> is a local image toolkit: compression, upscaling and
-        background removal. Everything runs on your machine, nothing is sent to
-        the network.
+      <p>
+        A local image toolkit: compression, upscaling and background removal.
+        Everything runs on your machine, nothing is sent to the network.
       </p>
     ),
     update: {
