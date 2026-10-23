@@ -29,9 +29,12 @@ interface SettingsProps {
   checking: boolean;
   checkFailed: boolean;
   onCheck: () => void;
+  /** Tab to open on — the menu bar's "Check for Updates…" lands on About. */
+  initialTab?: SettingsTab;
 }
 
-type Tab = "models" | "storage" | "look" | "about";
+export type SettingsTab = "models" | "storage" | "look" | "about";
+type Tab = SettingsTab;
 
 export function SettingsScreen({
   onOpenModels,
@@ -39,9 +42,10 @@ export function SettingsScreen({
   checking,
   checkFailed,
   onCheck,
+  initialTab = "models",
 }: SettingsProps) {
   const str = useStrings();
-  const [tab, setTab] = useState<Tab>("models");
+  const [tab, setTab] = useState<Tab>(initialTab);
   const [cache, setCache] = useState<CacheInfo | null>(null);
   const [clearing, setClearing] = useState(false);
   const [confirm, setConfirm] = useState(false);

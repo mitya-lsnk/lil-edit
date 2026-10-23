@@ -3,6 +3,7 @@ mod bg;
 mod fsx;
 mod imgx;
 mod ipcx;
+mod menu;
 mod models;
 mod settings;
 mod update;
@@ -26,6 +27,7 @@ pub fn run() {
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
+        .on_menu_event(menu::on_event)
         .invoke_handler(tauri::generate_handler![
             models::list_models,
             models::download_model,
@@ -42,6 +44,7 @@ pub fn run() {
             ai::upscale_image,
             bg::remove_background,
             update::check_update,
+            menu::lil_menu,
             take_pending_open,
         ])
         .manage(PendingOpen::default())

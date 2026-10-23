@@ -9,7 +9,7 @@ import { UpscalePanel } from "./components/UpscalePanel";
 import { EditPanel } from "./components/EditPanel";
 import { BatchPanel } from "./components/BatchPanel";
 import { FaqScreen } from "./components/FaqScreen";
-import { SettingsScreen } from "./components/SettingsScreen";
+import { SettingsScreen, type SettingsTab } from "./components/SettingsScreen";
 import { LanguagePicker } from "./components/LanguagePicker";
 import { Icon } from "./components/Icon";
 import { ModeToggle } from "./components/ModeToggle";
@@ -19,7 +19,8 @@ import { onImageDrop, onOpenedFiles, pickImage, splitPath, type Picked } from ".
 import { joinPath } from "./lib/save";
 import { hasTauri } from "./lib/tauri";
 import { autoCheckEnabled, checkUpdate, type UpdateInfo } from "./lib/update";
-import { useStrings } from "./lib/i18n";
+import { useLang, useStrings } from "./lib/i18n";
+import { useLilMenu } from "./lib/menu";
 
 // The base screen is either home or a tool. Models/Settings/Batch are separate
 // *overlays* (`aux`) drawn on top — so the tool underneath stays mounted and its
@@ -31,6 +32,7 @@ const TOOL_ORDER: Tool[] = ["upscale", "background", "edit", "compress"];
 
 function App() {
   const s = useStrings();
+  const { lang } = useLang();
   const [picked, setPicked] = useState<Picked | null>(null);
   const [dropError, setDropError] = useState<string | null>(null);
   const [savedPath, setSavedPath] = useState<string | null>(null);
@@ -61,6 +63,35 @@ function App() {
   useEffect(() => {
     if (hasTauri() && autoCheckEnabled()) void runCheck();
   }, [runCheck]);
+
+  // Which Settings tab to open on. `n` remounts Settings, so a menu click lands
+  // on the right tab even when Settings is already open on another one.
+  const [settingsAt, setSettingsAt] = useState<{ tab: SettingsTab; n: number }>({
+    tab: "models",
+    n: 0,
+  });
+  const openSettings = (tab: SettingsTab) => {
+    setSettingsAt((cur) => ({ tab, n: cur.n + 1 }));
+    setAux("settings");
+  };
+
+  // Native menu bar. "Open…" is the same picker as Replace, and closes any
+  // overlay so the newly loaded picture is what you see.
+  useLilMenu(lang, {
+    settings: () => openSettings("models"),
+    updates: () => {
+      openSettings("about");
+      void runCheck();
+    },
+    open: async () => {
+      const p = await pickImage(s.intake.imagesFilter);
+      if (p) {
+        setDropError(null);
+        setPicked(p);
+        setAux(null);
+      }
+    },
+  });
 
   const mainRef = useRef<HTMLElement>(null);
   const file = picked?.file ?? null;
@@ -165,9 +196,10 @@ function App() {
           : "";
 
   // Overlays toggle on their own trigger (so a second click closes them) and
-  // never touch `screen`, so the tool underneath keeps its state.
-  const toggleAux = (target: Aux) =>
-    setAux((cur) => (cur === target ? null : target));
+  // never touch `screen`, so the tool underneath keeps its state. The gear
+  // always opens Settings on its first tab, whatever the menu bar last opened.
+  const toggleSettings = () =>
+    aux === "settings" ? setAux(null) : openSettings("models");
   const openBatch = () => setAux("batch");
   const goHome = () => {
     setScreen("home");
@@ -221,7 +253,7 @@ function App() {
           <button
             className={`help help-icon ${aux === "settings" ? "active" : ""}`}
             aria-pressed={aux === "settings"}
-            onClick={() => toggleAux("settings")}
+            onClick={toggleSettings}
             aria-label={s.app.settingsAria}
             title={s.app.settingsAria}
           >
@@ -299,6 +331,8 @@ function App() {
         {aux === "faq" && <FaqScreen />}
         {aux === "settings" && (
           <SettingsScreen
+            key={settingsAt.n}
+            initialTab={settingsAt.tab}
             onOpenModels={() => setAux("faq")}
             update={update}
             checking={checking}
