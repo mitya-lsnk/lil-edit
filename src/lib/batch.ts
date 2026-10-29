@@ -6,6 +6,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { readFileBytes, writeFileBytes } from "./fsx";
 import { joinPath } from "./save";
+import { loadStored, saveStored } from "./stored";
 import { compressFile, FORMAT_META, type OutputFormat } from "./compress";
 import { upscaleImage, removeBackground } from "./ai";
 import {
@@ -69,21 +70,11 @@ const DEFAULT_SETTINGS: BatchSettings = {
 };
 
 export function loadPaths(): BatchPaths {
-  try {
-    const raw = localStorage.getItem(PATHS_KEY);
-    if (raw) return { ...DEFAULT_PATHS, ...JSON.parse(raw) };
-  } catch {
-    /* ignore malformed */
-  }
-  return { ...DEFAULT_PATHS };
+  return loadStored(PATHS_KEY, DEFAULT_PATHS);
 }
 
 export function savePaths(p: BatchPaths): void {
-  try {
-    localStorage.setItem(PATHS_KEY, JSON.stringify(p));
-  } catch {
-    /* ignore quota */
-  }
+  saveStored(PATHS_KEY, p);
 }
 
 export function clearPaths(): void {
@@ -95,21 +86,11 @@ export function clearPaths(): void {
 }
 
 export function loadSettings(): BatchSettings {
-  try {
-    const raw = localStorage.getItem(SET_KEY);
-    if (raw) return { ...DEFAULT_SETTINGS, ...JSON.parse(raw) };
-  } catch {
-    /* ignore */
-  }
-  return { ...DEFAULT_SETTINGS };
+  return loadStored(SET_KEY, DEFAULT_SETTINGS);
 }
 
 export function saveSettings(s: BatchSettings): void {
-  try {
-    localStorage.setItem(SET_KEY, JSON.stringify(s));
-  } catch {
-    /* ignore */
-  }
+  saveStored(SET_KEY, s);
 }
 
 /** Full paths of the image files directly inside `dir` (non-recursive). */

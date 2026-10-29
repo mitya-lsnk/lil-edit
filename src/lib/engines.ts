@@ -1,6 +1,8 @@
 // The upscale engine/model registry, shared by the single-image Upscale panel
 // and the batch queue. Ids must match the entries in src-tauri/src/models.rs.
 
+import { loadStored, saveStored } from "./stored";
+
 export interface EngineModel {
   value: string;
   /** Scales this model can actually produce. */
@@ -107,19 +109,9 @@ const DEFAULT_CHOICE: UpscaleChoice = {
 };
 
 export function loadChoice(): UpscaleChoice {
-  try {
-    const raw = localStorage.getItem(CHOICE_KEY);
-    if (raw) return { ...DEFAULT_CHOICE, ...JSON.parse(raw) };
-  } catch {
-    /* ignore malformed */
-  }
-  return { ...DEFAULT_CHOICE };
+  return loadStored(CHOICE_KEY, DEFAULT_CHOICE);
 }
 
 export function saveChoice(c: UpscaleChoice): void {
-  try {
-    localStorage.setItem(CHOICE_KEY, JSON.stringify(c));
-  } catch {
-    /* ignore quota / private mode */
-  }
+  saveStored(CHOICE_KEY, c);
 }
