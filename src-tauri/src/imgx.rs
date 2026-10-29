@@ -201,4 +201,147 @@ mod tests {
         assert_eq!(Orientation::from_exif(6), Some(Orientation::Rotate90));
         assert_eq!(Orientation::from_exif(1), Some(Orientation::NoTransforms));
     }
+
+    // ---- iCCP splice, byte by byte -------------------------------------------
+    // The tests below build PNG files by hand so each one can pin a single rule
+    // of the chunk walk: where the profile lands, and when the file is left alone.
+
+    /// One PNG chunk, with a correct length and CRC.
+    fn chunk(kind: &[u8; 4], data: &[u8]) -> Vec<u8> {
+        let mut crc = flate2::Crc::new();
+        crc.update(kind);
+        crc.update(data);
+        let mut out = (data.len() as u32).to_be_bytes().to_vec();
+        out.extend_from_slice(kind);
+        out.extend_from_slice(data);
+        out.extend_from_slice(&crc.sum().to_be_bytes());
+        out
+    }
+
+    /// A 1×1 RGB header. 8 (signature) + 25 = 33: where the profile must land.
+    fn ihdr() -> Vec<u8> {
+        chunk(b"IHDR", &[0, 0, 0, 1, 0, 0, 0, 1, 8, 2, 0, 0, 0])
+    }
+
+    const AFTER_IHDR: usize = 33;
+
+    fn png_of(parts: &[&[u8]]) -> Vec<u8> {
+        let mut out = PNG_SIG.to_vec();
+        for p in parts {
+            out.extend_from_slice(p);
+        }
+        out
+    }
+
+    /// Read the iCCP chunk at `at`: checks its framing, returns the profile and
+    /// the offset just past the chunk.
+    fn read_iccp(png: &[u8], at: usize) -> (Vec<u8>, usize) {
+        use std::io::Read;
+        let len = u32::from_be_bytes(png[at..at + 4].try_into().unwrap()) as usize;
+        assert_eq!(&png[at + 4..at + 8], b"iCCP");
+        let data = &png[at + 8..at + 8 + len];
+        let mut crc = flate2::Crc::new();
+        crc.update(b"iCCP");
+        crc.update(data);
+        let stored = u32::from_be_bytes(png[at + 8 + len..at + 12 + len].try_into().unwrap());
+        assert_eq!(stored, crc.sum(), "CRC does not match the chunk");
+        assert_eq!(&data[..13], b"ICC profile\0\0", "name, terminator, method 0");
+        let mut icc = Vec::new();
+        flate2::read::ZlibDecoder::new(&data[13..])
+            .read_to_end(&mut icc)
+            .unwrap();
+        (icc, at + 12 + len)
+    }
+
+    /// The profile goes right after IHDR, ahead of everything else, and the rest
+    /// of the file is carried over untouched.
+    #[test]
+    fn profile_lands_directly_after_ihdr() {
+        let gama = chunk(b"gAMA", &[0, 0, 0xb1, 0x8f]);
+        let idat = chunk(b"IDAT", &[1, 2, 3]);
+        let iend = chunk(b"IEND", &[]);
+        let png = png_of(&[&ihdr(), &gama, &idat, &iend]);
+        let icc = b"profile bytes".repeat(10);
+
+        let out = png_with_icc(png.clone(), &icc);
+
+        assert_eq!(&out[..AFTER_IHDR], &png[..AFTER_IHDR]);
+        let (got, end) = read_iccp(&out, AFTER_IHDR);
+        assert_eq!(got, icc);
+        assert_eq!(&out[end..], &png[AFTER_IHDR..], "the rest moved or changed");
+    }
+
+    /// A file that is nothing but a header is still a PNG we can tag; the walk
+    /// must not read the end of the buffer as a truncated chunk.
+    #[test]
+    fn header_only_png_is_tagged() {
+        let png = png_of(&[&ihdr()]);
+        let out = png_with_icc(png.clone(), b"profile");
+        assert_ne!(out, png, "left alone");
+        let (got, end) = read_iccp(&out, AFTER_IHDR);
+        assert_eq!(got, b"profile");
+        assert_eq!(end, out.len());
+    }
+
+    /// A chunk header with no room for its CRC is a cut-off file: leave it.
+    #[test]
+    fn chunk_header_at_the_very_end_is_a_truncated_file() {
+        let png = png_of(&[&ihdr(), &[0, 0, 0, 0], b"tEXt"]);
+        assert_eq!(png_with_icc(png.clone(), b"profile"), png);
+    }
+
+    /// A chunk that claims more bytes than the file has: leave it.
+    #[test]
+    fn chunk_longer_than_the_file_is_a_truncated_file() {
+        let png = png_of(&[&ihdr(), &[0, 0, 0x03, 0xe8], b"tEXt", b"short"]);
+        assert_eq!(png_with_icc(png.clone(), b"profile"), png);
+    }
+
+    /// A few stray bytes after the last whole chunk are too short to be a header.
+    /// They are not an error and must not be read past the end of the buffer.
+    #[test]
+    fn stray_tail_shorter_than_a_header_is_carried_over() {
+        let png = png_of(&[&ihdr(), &[7, 7, 7]]);
+        let out = png_with_icc(png.clone(), b"profile");
+        let (got, end) = read_iccp(&out, AFTER_IHDR);
+        assert_eq!(got, b"profile");
+        assert_eq!(&out[end..], &[7, 7, 7]);
+    }
+
+    /// Pixel data before any header means there is no place to put the profile.
+    #[test]
+    fn pixel_data_without_a_header_is_left_alone() {
+        let png = png_of(&[&chunk(b"IDAT", &[1, 2, 3]), &chunk(b"IEND", &[])]);
+        assert_eq!(png_with_icc(png.clone(), b"profile"), png);
+    }
+
+    /// `sRGB` and `iCCP` must not coexist, wherever the encoder put the first one.
+    #[test]
+    fn srgb_chunk_blocks_the_profile() {
+        let png = png_of(&[&ihdr(), &chunk(b"sRGB", &[0]), &chunk(b"IEND", &[])]);
+        assert_eq!(png_with_icc(png.clone(), b"profile"), png);
+    }
+
+    /// A palette ends the search: colour chunks may not follow it, so anything
+    /// later is not looked at.
+    #[test]
+    fn colour_chunk_after_the_palette_is_not_searched_for() {
+        let png = png_of(&[
+            &ihdr(),
+            &chunk(b"PLTE", &[0, 0, 0]),
+            &chunk(b"sRGB", &[0]),
+            &chunk(b"IEND", &[]),
+        ]);
+        let out = png_with_icc(png.clone(), b"profile");
+        let (_, end) = read_iccp(&out, AFTER_IHDR);
+        assert_eq!(&out[end..], &png[AFTER_IHDR..]);
+    }
+
+    /// Right length, wrong signature: not a PNG.
+    #[test]
+    fn eight_bytes_that_are_not_the_signature_are_left_alone() {
+        let mut png = png_of(&[&ihdr()]);
+        png[1] = b'X';
+        assert_eq!(png_with_icc(png.clone(), b"profile"), png);
+    }
 }
