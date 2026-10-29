@@ -78,50 +78,108 @@ pub fn png_with_icc(png: Vec<u8>, icc: &[u8]) -> Vec<u8> {
 }
 
 fn splice_iccp(png: &[u8], icc: &[u8]) -> Option<Vec<u8>> {
-    if png.len() < 8 || &png[..8] != PNG_SIG {
+    if !png.starts_with(PNG_SIG) {
         return None;
     }
-    // Walk the chunk list: find the end of IHDR, and bail out if the encoder
-    // already said something about colour (iCCP and sRGB must not coexist).
-    let mut pos = 8usize;
-    let mut insert_at = None;
-    while pos + 8 <= png.len() {
-        let len = u32::from_be_bytes(png[pos..pos + 4].try_into().ok()?) as usize;
-        let kind = &png[pos + 4..pos + 8];
-        let end = pos.checked_add(12)?.checked_add(len)?;
-        if end > png.len() {
-            return None; // truncated
-        }
-        match kind {
-            b"IHDR" => insert_at = Some(end),
-            b"iCCP" | b"sRGB" => return None,
-            // Anything from here on must come after iCCP anyway.
-            b"PLTE" | b"IDAT" | b"IEND" => break,
-            _ => {}
-        }
-        pos = end;
-    }
-    let at = insert_at?;
+    let at = iccp_offset(png)?;
+    // `concat` sizes the result once, so the quarter-gigabyte body is copied
+    // exactly once however large it is.
+    Some([&png[..at], &iccp_chunk(icc), &png[at..]].concat())
+}
 
-    let mut data = Vec::with_capacity(icc.len() / 2 + 16);
-    data.extend_from_slice(b"ICC profile\0"); // name, null-terminated
-    data.push(0); // compression method: zlib
-    let mut enc = flate2::write::ZlibEncoder::new(data, flate2::Compression::default());
-    std::io::Write::write_all(&mut enc, icc).ok()?;
-    let data = enc.finish().ok()?;
+/// What a chunk means for deciding where the profile goes.
+enum Role {
+    /// IHDR: the profile goes right after it.
+    Header,
+    /// iCCP or sRGB: the file already says something about colour.
+    Colour,
+    /// Palette or pixels: colour chunks may not follow, so the search is over.
+    Pixels,
+    Other,
+}
+
+fn role_of(kind: &[u8]) -> Role {
+    match kind {
+        b"IHDR" => Role::Header,
+        b"iCCP" | b"sRGB" => Role::Colour,
+        b"PLTE" | b"IDAT" | b"IEND" => Role::Pixels,
+        _ => Role::Other,
+    }
+}
+
+/// Where the next chunk list entry stands, as seen by `iccp_offset`.
+enum Step<'a> {
+    Chunk { kind: &'a [u8], end: usize },
+    /// Fewer than eight bytes left: too short to be a chunk header.
+    Done,
+    /// The chunk claims more bytes than the file has.
+    Truncated,
+}
+
+/// Read the chunk header at `pos`: length (4), type (4); the data and the
+/// CRC (4) follow.
+fn chunk_at(png: &[u8], pos: usize) -> Step<'_> {
+    if pos + 8 > png.len() {
+        return Step::Done;
+    }
+    let len = u32::from_be_bytes([png[pos], png[pos + 1], png[pos + 2], png[pos + 3]]) as usize;
+    // `len` is a u32 and the targets are 64-bit, so this cannot overflow.
+    let end = pos + 12 + len;
+    if end > png.len() {
+        return Step::Truncated;
+    }
+    Step::Chunk {
+        kind: &png[pos + 4..pos + 8],
+        end,
+    }
+}
+
+/// Walk the chunk list and return the offset just past IHDR, where the profile
+/// goes. `None` when it must not go anywhere: the file is cut off, has no
+/// header before its pixels, or already carries colour information (iCCP and
+/// sRGB must not coexist).
+fn iccp_offset(png: &[u8]) -> Option<usize> {
+    let mut pos = PNG_SIG.len();
+    let mut after_ihdr = None;
+    loop {
+        match chunk_at(png, pos) {
+            Step::Done => return after_ihdr,
+            Step::Truncated => return None,
+            Step::Chunk { kind, end } => {
+                match role_of(kind) {
+                    Role::Header => after_ihdr = Some(end),
+                    Role::Colour => return None,
+                    Role::Pixels => return after_ihdr,
+                    Role::Other => {}
+                }
+                pos = end;
+            }
+        }
+    }
+}
+
+/// The iCCP chunk for `icc`, framing and CRC included.
+fn iccp_chunk(icc: &[u8]) -> Vec<u8> {
+    // Profile name, its terminator, then compression method 0 (zlib).
+    let mut enc = flate2::write::ZlibEncoder::new(
+        b"ICC profile\0\0".to_vec(),
+        flate2::Compression::default(),
+    );
+    // Both calls write into a Vec, which cannot fail.
+    std::io::Write::write_all(&mut enc, icc).expect("writing to a Vec");
+    let data = enc.finish().expect("writing to a Vec");
 
     let mut crc = flate2::Crc::new();
     crc.update(b"iCCP");
     crc.update(&data);
 
-    let mut out = Vec::with_capacity(png.len() + data.len() + 12);
-    out.extend_from_slice(&png[..at]);
-    out.extend_from_slice(&(data.len() as u32).to_be_bytes());
-    out.extend_from_slice(b"iCCP");
-    out.extend_from_slice(&data);
-    out.extend_from_slice(&crc.sum().to_be_bytes());
-    out.extend_from_slice(&png[at..]);
-    Some(out)
+    [
+        &(data.len() as u32).to_be_bytes()[..],
+        b"iCCP",
+        &data,
+        &crc.sum().to_be_bytes(),
+    ]
+    .concat()
 }
 
 #[cfg(test)]
@@ -295,6 +353,18 @@ mod tests {
     fn chunk_longer_than_the_file_is_a_truncated_file() {
         let png = png_of(&[&ihdr(), &[0, 0, 0x03, 0xe8], b"tEXt", b"short"]);
         assert_eq!(png_with_icc(png.clone(), b"profile"), png);
+    }
+
+    /// All four length bytes count: a length that is non-zero in only one byte
+    /// still says "much longer than this file", wherever that byte sits.
+    #[test]
+    fn every_byte_of_the_chunk_length_is_read() {
+        for i in 0..4 {
+            let mut len = [0u8; 4];
+            len[i] = 0xff;
+            let png = png_of(&[&ihdr(), &len, b"tEXt", b"short"]);
+            assert_eq!(png_with_icc(png.clone(), b"profile"), png, "byte {i}");
+        }
     }
 
     /// A few stray bytes after the last whole chunk are too short to be a header.
