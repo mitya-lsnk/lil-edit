@@ -635,7 +635,12 @@
   opacity: 0.6;
   cursor: help;
   position: relative;
-  vertical-align: middle;
+  /* Centre the circle on the capitals of the label (11px mono caps are about
+     8px tall, so it hangs 3.5px below the baseline) rather than on the middle
+     of lowercase letters, and trim its margin box to the label's line height
+     so a label with a "?" is no taller than one without. */
+  vertical-align: -3.5px;
+  margin-block: -2px;
 }
 .help-tip:hover,
 .help-tip:focus-visible {
