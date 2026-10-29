@@ -5,7 +5,7 @@
 // We keep the RGB of the *original* image and only swap in the adjusted alpha, so
 // growing the mask reveals real pixels instead of a black fringe.
 
-import { canvasToPngBytes, loadImageFromFile } from "./edit";
+import { canvasToPngBytes, loadImageFromBlob, loadImageFromFile } from "./edit";
 
 export interface EdgeSettings {
   /** 0..100 — push semi-transparent pixels toward fully kept / fully cut. */
@@ -20,22 +20,6 @@ export const DEFAULT_EDGE: EdgeSettings = { hardness: 0, grow: 0, feather: 0 };
 
 export function edgeIsIdentity(e: EdgeSettings): boolean {
   return e.hardness === 0 && e.grow === 0 && e.feather === 0;
-}
-
-function loadImageFromBlob(blob: Blob): Promise<HTMLImageElement> {
-  return new Promise((resolve, reject) => {
-    const url = URL.createObjectURL(blob);
-    const img = new Image();
-    img.onload = () => {
-      URL.revokeObjectURL(url);
-      resolve(img);
-    };
-    img.onerror = () => {
-      URL.revokeObjectURL(url);
-      reject(new Error("Could not decode the mask."));
-    };
-    img.src = url;
-  });
 }
 
 /** Separable min/max filter — the building block of erode (min) / dilate (max). */
@@ -138,6 +122,7 @@ export async function applyMatte(
   // Draw the mask at the original's resolution (handles any size mismatch).
   const maskImg = await loadImageFromBlob(
     new Blob([maskPng as BlobPart], { type: "image/png" }),
+    "Could not decode the mask.",
   );
   const mc = document.createElement("canvas");
   mc.width = w;

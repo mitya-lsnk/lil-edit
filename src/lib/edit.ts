@@ -11,10 +11,10 @@ export interface CropRect {
   h: number;
 }
 
-/** Load a File into an <img>, resolving once it has decoded. */
-export function loadImageFromFile(file: File): Promise<HTMLImageElement> {
+/** Decode an image Blob (a File is one) into an <img>; `failure` is the error text if it can't be read. */
+export function loadImageFromBlob(blob: Blob, failure: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
-    const url = URL.createObjectURL(file);
+    const url = URL.createObjectURL(blob);
     const img = new Image();
     img.onload = () => {
       URL.revokeObjectURL(url);
@@ -22,10 +22,15 @@ export function loadImageFromFile(file: File): Promise<HTMLImageElement> {
     };
     img.onerror = () => {
       URL.revokeObjectURL(url);
-      reject(new Error("Could not decode this image."));
+      reject(new Error(failure));
     };
     img.src = url;
   });
+}
+
+/** Load a File into an <img>, resolving once it has decoded. */
+export function loadImageFromFile(file: File): Promise<HTMLImageElement> {
+  return loadImageFromBlob(file, "Could not decode this image.");
 }
 
 function make(w: number, h: number): HTMLCanvasElement {
