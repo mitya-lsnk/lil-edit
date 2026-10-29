@@ -632,6 +632,9 @@
   font-size: 10px;
   font-weight: 700;
   line-height: 1;
+  /* The label's letter-spacing is inherited, and it is added after every
+     glyph — including the "?" — so the mark sat left of the circle's centre. */
+  letter-spacing: 0;
   opacity: 0.6;
   cursor: help;
   position: relative;
