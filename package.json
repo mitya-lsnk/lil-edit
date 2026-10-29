@@ -1,7 +1,7 @@
 {
   "name": "lil-edit",
   "private": true,
-  "version": "0.2.1",
+  "version": "0.2.2",
   "type": "module",
   "description": "Cross-platform desktop image toolkit: compression, background removal, and upscaling — all local and offline.",
   "license": "MIT",
