@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from "react";
 import { Icon } from "./Icon";
-import { openUrl } from "@tauri-apps/plugin-opener";
+import { revealItemInDir } from "@tauri-apps/plugin-opener";
 import { splitPath } from "../lib/intake";
 import { hasTauri } from "../lib/tauri";
 import { useStrings } from "../lib/i18n";
@@ -57,7 +57,7 @@ export function Toast({
       </div>
       <div className="toast-actions">
         {canOpen && (
-          <button className="b-btn" onClick={() => openUrl(`file://${dir}`)}>
+          <button className="b-btn" onClick={() => revealItemInDir(path)}>
             {s.toast.openFolder}
           </button>
         )}
