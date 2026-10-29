@@ -635,11 +635,13 @@
   opacity: 0.6;
   cursor: help;
   position: relative;
-  /* Centre the circle on the capitals of the label (11px mono caps are about
-     8px tall, so it hangs 3.5px below the baseline) rather than on the middle
-     of lowercase letters, and trim its margin box to the label's line height
-     so a label with a "?" is no taller than one without. */
-  vertical-align: -3.5px;
+  /* Sit on the label's own baseline. A flex box takes its baseline from the
+     "?" inside it, so this puts the glyph on the same line as the capitals and
+     the circle centres on them (a length here moves that baseline, not the
+     circle: -3.5px dropped it visibly below the text). The negative block
+     margin trims the 15px circle to the label's line height so a label with a
+     "?" is no taller than one without. */
+  vertical-align: baseline;
   margin-block: -2px;
 }
 .help-tip:hover,
