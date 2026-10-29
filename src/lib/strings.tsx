@@ -106,6 +106,11 @@ const ru = {
     scale: "Масштаб",
     scaleOneTip:
       "«Шумодав» не увеличивает картинку — она остаётся в исходном размере, модель только убирает шум и артефакты сжатия. Есть у waifu2x с моделью cunet.",
+    toneTips: {
+      "remacri-4x": "Remacri слегка осветляет картинку — примерно на 1–2 %. Если важны точные цвета, возьмите UltraSharp или waifu2x: они тон почти не меняют.",
+      "realesr-animevideov3": "Эта модель слегка осветляет картинку — примерно на 1–2 %. Если важны точные цвета, возьмите UltraSharp или waifu2x: они тон почти не меняют.",
+      "upscayl-standard-4x": "«Стандарт» слегка затемняет картинку — примерно на 1–2 %. Если важны точные цвета, возьмите UltraSharp или waifu2x: они тон почти не меняют.",
+    } as Record<string, string>,
     denoiseSeg: "Шумодав",
     denoiseOnly: "Размер не меняется — только убираем шум и артефакты сжатия.",
     denoise: "Сила",
@@ -499,6 +504,11 @@ const en: Dict = {
     scale: "Scale",
     scaleOneTip:
       "\"Denoise\" doesn't enlarge anything — the image keeps its original size and the model only removes noise and compression artefacts. Available on waifu2x with the cunet model.",
+    toneTips: {
+      "remacri-4x": "Remacri brightens the picture slightly — by roughly 1–2 %. If exact colours matter, pick UltraSharp or waifu2x: they barely change the tone.",
+      "realesr-animevideov3": "This model brightens the picture slightly — by roughly 1–2 %. If exact colours matter, pick UltraSharp or waifu2x: they barely change the tone.",
+      "upscayl-standard-4x": "Standard darkens the picture slightly — by roughly 1–2 %. If exact colours matter, pick UltraSharp or waifu2x: they barely change the tone.",
+    } as Record<string, string>,
     denoiseSeg: "Denoise",
     denoiseOnly: "Same size — noise and compression artefacts only.",
     denoise: "Strength",

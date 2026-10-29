@@ -5,6 +5,7 @@ import { upscaleImage } from "../lib/ai";
 import { saveBytes } from "../lib/save";
 import { ModelManager } from "./ModelManager";
 import { HelpTip } from "./HelpTip";
+import { ModelToneTip } from "./ModelToneTip";
 import { Compare } from "./Compare";
 import { SingleView } from "./SingleView";
 import { type Matte } from "../lib/matteBg";
@@ -201,7 +202,10 @@ export function UpscalePanel({ file, srcDir, onSendTo, onSaved }: Props) {
           </div>
         )}
         <div className="t-field">
-          <span className="t-label">{s.upscale.model}</span>
+          <span className="t-label">
+            <ModelToneTip model={model} />
+            {s.upscale.model}
+          </span>
           <select
             className="t-select"
             value={model?.value}
